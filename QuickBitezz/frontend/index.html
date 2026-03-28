@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickBitezzz</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <header class="header">
+            <h1>🍔 QuickBitezzz</h1>
+            <img src="images/logo.jpg" alt="Website Logo" class="logo">
+            <p>Fast campus food ordering</p>
+            <span class="left-icon">🥤</span>
+            <span class="right-icon">🍕</span>
+            <div id="userInfo" class="seat-box"></div>
+            <button onclick="logoutUser()">Logout</button>
+        </header>
+
+        <section class="seat-section">
+            <h2>🪑 Seat Availability</h2>
+            <div id="seatInfo" class="seat-box">Loading seats...</div>
+        </section>
+
+        <section class="token-section">
+            <h2>🎫 Token Status</h2>
+            <div class="token-box">
+                <p>Now Serving: <strong id="currentToken">--</strong></p>
+                <p>Your Token: <strong id="yourToken">--</strong></p>
+            </div>
+        </section>
+
+        <section class="menu-section">
+            <h2>Menu</h2>
+            <div id="menu" class="menu-grid"></div>
+        </section>
+
+        <section class="cart-section">
+            <h2>🛒 Cart</h2>
+            <ul id="cart" class="cart-list"></ul>
+            <h3 id="totalAmount">Total: ₹0</h3>
+
+            <label for="paymentMethod"><strong>Select Payment Method:</strong></label>
+            <select id="paymentMethod">
+                <option value="">-- Choose Payment Method --</option>
+                <option value="UPI">UPI</option>
+            </select>
+
+            <button id="payBtn" onclick="makePayment()">Pay Now</button>
+            <button id="orderBtn" onclick="placeOrder()">Place Order</button>
+        </section>
+
+        <div id="upiModal" class="upi-modal">
+            <div class="upi-modal-content">
+                <span class="close-btn" onclick="closeUPIPopup()">&times;</span>
+                <h2>Scan to Pay via UPI</h2>
+                <img src="images/PAY HERE.png" alt="Fake UPI QR" class="upi-qr">
+                <p><strong>Amount:</strong> ₹<span id="upiAmount">0</span></p>
+                <p>Processing payment...</p>
+                <p>Scan & pay... Verifying payment ⏳</p>
+            </div>
+        </div>
+
+        <section class="result-section">
+            <h2>Order Status</h2>
+            <div id="result" class="result-box">No order placed yet.</div>
+        </section>
+    </div>
+
+  
+
+    <script>
+          const API_BASE = "https://quickbitezzz-backend4.onrender.com";
+        let cart = [];
+        let currentOrderId = null;
+        let trackingInterval = null;
+        let menuData = [];
+        let isPaid = false;
+        let selectedPaymentMethod = "";
+
+        if (!localStorage.getItem("rollNo")) {
+            window.location.href = "login.html";
+        }
+
+        document.getElementById("userInfo").innerHTML = `
+            Welcome, ${localStorage.getItem("studentName") || "Student"} 
+            (${localStorage.getItem("rollNo")})
+        `;
+
+        function logoutUser() {
+            localStorage.clear();
+            window.location.href = "login.html";
+        }
+
+        function loadSeats() {
+            fetch(`${API_BASE}/seats`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById("seatInfo").innerHTML =
+                    `Available Seats: ${data.available_seats} / ${data.total_seats}`;
+            })
+            .catch(error => console.log("Seat load error:", error));
+        }
+
+        function loadCurrentToken() {
+            fetch(`${API_BASE}/current-token`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById("currentToken").innerText = data.current_token;
+            })
+            .catch(error => console.log("Token load error:", error));
+        }
+
+        fetch(`${API_BASE}/menu`)
+        .then(res => res.json())
+        .then(data => {
+            menuData = data;
+            let menuDiv = document.getElementById("menu");
+            menuDiv.innerHTML = "";
+
+            data.forEach(item => {
+                let card = document.createElement("div");
+                card.className = "food-card";
+
+                let emoji = "🍽️";
+                if (item.name === "Burger") emoji = "🍔";
+                if (item.name === "Pizza") emoji = "🍕";
+                if (item.name === "Fries") emoji = "🍟";
+
+                card.innerHTML = `
+                    <div class="food-emoji">${emoji}</div>
+                    <h3>${item.name}</h3>
+                    <p><strong>ID:</strong> ${item.id}</p>
+                    <p><strong>Price:</strong> ₹${item.price}</p>
+                    <button onclick="addToCart(${item.id})">Add to Cart</button>
+                `;
+
+                menuDiv.appendChild(card);
+            });
+        })
+        .catch(error => {
+            console.log("Menu load error:", error);
+            document.getElementById("menu").innerHTML = "<p>Menu failed to load.</p>";
+        });
+
+        function addToCart(itemId) {
+            let item = menuData.find(food => food.id === itemId);
+            if (!item) return;
+
+            let existingItem = cart.find(cartItem => cartItem.id === itemId);
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: 1
+                });
+            }
+
+            displayCart();
+        }
+
+        function increaseQty(itemId) {
+            let item = cart.find(cartItem => cartItem.id === itemId);
+            if (item) {
+                item.quantity += 1;
+                displayCart();
+            }
+        }
+
+        function decreaseQty(itemId) {
+            let item = cart.find(cartItem => cartItem.id === itemId);
+            if (item) {
+                item.quantity -= 1;
+                if (item.quantity <= 0) {
+                    cart = cart.filter(cartItem => cartItem.id !== itemId);
+                }
+                displayCart();
+            }
+        }
+
+        function removeItem(itemId) {
+            cart = cart.filter(cartItem => cartItem.id !== itemId);
+            displayCart();
+        }
+
+        function getTotalAmount() {
+            let total = 0;
+            cart.forEach(item => {
+                total += item.price * item.quantity;
+            });
+            return total;
+        }
+
+        function displayCart() {
+            let cartList = document.getElementById("cart");
+            cartList.innerHTML = "";
+
+            if (cart.length === 0) {
+                cartList.innerHTML = "<li>Cart is empty.</li>";
+                document.getElementById("totalAmount").innerHTML = "Total: ₹0";
+                return;
+            }
+
+            cart.forEach(item => {
+                let li = document.createElement("li");
+                li.innerHTML = `
+                    <div class="cart-item-row">
+                        <div>
+                            <strong>${item.name}</strong><br>
+                            Price: ₹${item.price} × ${item.quantity} = ₹${item.price * item.quantity}
+                        </div>
+                        <div class="cart-buttons">
+                            <button onclick="decreaseQty(${item.id})">-</button>
+                            <span>${item.quantity}</span>
+                            <button onclick="increaseQty(${item.id})">+</button>
+                            <button onclick="removeItem(${item.id})">Remove</button>
+                        </div>
+                    </div>
+                `;
+                cartList.appendChild(li);
+            });
+
+            document.getElementById("totalAmount").innerHTML = `Total: ₹${getTotalAmount()}`;
+        }
+
+        function makePayment() {
+            if (cart.length === 0) {
+                document.getElementById("result").innerHTML = "Cart is empty.";
+                return;
+            }
+
+            let paymentMethod = document.getElementById("paymentMethod").value;
+            let total = getTotalAmount();
+
+            if (!paymentMethod) {
+                document.getElementById("result").innerHTML = "Please select UPI payment method.";
+                return;
+            }
+
+            selectedPaymentMethod = paymentMethod;
+
+            if (paymentMethod === "UPI") {
+                document.getElementById("upiAmount").textContent = total;
+                document.getElementById("upiModal").style.display = "flex";
+
+                setTimeout(() => {
+                    isPaid = true;
+                    document.getElementById("upiModal").style.display = "none";
+
+                    document.getElementById("result").innerHTML = `
+                        <p><strong>UPI Payment Successful ✅</strong></p>
+                        <p><strong>Amount Paid:</strong> ₹${total}</p>
+                        <p><strong>Payment Method:</strong> UPI</p>
+                    `;
+                }, 3000);
+            }
+        }
+
+        function closeUPIPopup() {
+            document.getElementById("upiModal").style.display = "none";
+        }
+
+        function placeOrder() {
+            if (!selectedPaymentMethod) {
+                document.getElementById("result").innerHTML = "Please select and confirm payment method first.";
+                return;
+            }
+
+            if (cart.length === 0) {
+                document.getElementById("result").innerHTML = "Cart is empty.";
+                return;
+            }
+
+            if (!isPaid) {
+                document.getElementById("result").innerHTML = "Please complete payment first.";
+                return;
+            }
+
+            let orderItems = cart.map(item => ({
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity
+            }));
+
+            fetch(`${API_BASE}/order`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    item: orderItems,
+                    total: getTotalAmount(),
+                    payment_status: "Paid",
+                    payment_method: selectedPaymentMethod
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                isPaid = false;
+                selectedPaymentMethod = "";
+                document.getElementById("paymentMethod").value = "";
+
+                currentOrderId = data.order.order_id;
+                document.getElementById("yourToken").innerText = data.order.token_number;
+
+                let statusText = data.order.status || "Preparing";
+
+                document.getElementById("result").innerHTML = `
+                    <p><strong>Order placed successfully</strong></p>
+                    <p><strong>Order ID:</strong> ${data.order.order_id}</p>
+                    <p><strong>Token Number:</strong> ${data.order.token_number}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="status ${getStatusClass(statusText)}">${statusText}</span>
+                    </p>
+                    <p><strong>Seats Left:</strong> ${data.available_seats}</p>
+                    <p><strong>Total Paid:</strong> ₹${data.order.total_amount}</p>
+                    <p><strong>Payment Method:</strong> ${data.order.payment_method}</p>
+                    <p><strong>Payment Status:</strong> ${data.order.payment_status}</p>
+                `;
+
+                cart = [];
+                displayCart();
+                loadSeats();
+
+                if (trackingInterval) {
+                    clearInterval(trackingInterval);
+                }
+
+                trackOrder();
+            })
+            .catch(error => {
+                document.getElementById("result").innerHTML = "Error placing order.";
+                console.log(error);
+            });
+        }
+
+        function trackOrder() {
+            trackingInterval = setInterval(() => {
+                fetch(`${API_BASE}/status/${currentOrderId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById("result").innerHTML = "Order not found.";
+                        clearInterval(trackingInterval);
+                        return;
+                    }
+
+                    let statusText = data.status || "Unknown";
+
+                    document.getElementById("result").innerHTML = `
+                        <p><strong>Order ID:</strong> ${data.order_id ?? "N/A"}</p>
+                        <p><strong>Token Number:</strong> ${data.token_number ?? "N/A"}</p>
+                        <p><strong>Status:</strong> 
+                            <span class="status ${getStatusClass(statusText)}">${statusText}</span>
+                        </p>
+                        <p><strong>Seats Left:</strong> ${data.seats_left ?? "N/A"}</p>
+                        <p><strong>Total Paid:</strong> ₹${data.total_amount ?? "N/A"}</p>
+                    `;
+
+                    if (statusText === "Ochi Tini Poo") {
+                        clearInterval(trackingInterval);
+                    }
+                })
+                .catch(error => {
+                    console.log("Tracking error:", error);
+                });
+            }, 5000);
+        }
+
+        function getStatusClass(status) {
+            if (!status || typeof status !== "string") return "";
+
+            if (status.includes("Preparing")) return "status-preparing";
+            if (status.includes("Ready Avuthundhi Chill macha")) return "status-delivery";
+            if (status.includes("Ochi Tini Poo") || status.includes("ochi Tini Poo")) return "status-done";
+
+            return "";
+        }
+
+        loadSeats();
+        loadCurrentToken();
+        setInterval(loadCurrentToken, 3000);
+    </script>
+</body>
+</html>

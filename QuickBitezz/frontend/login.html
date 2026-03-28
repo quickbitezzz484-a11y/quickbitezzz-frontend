@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickBitezzz Login</title>
+    <p style="font-size:12px; color:#999;">Only college students allowed</p>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <body>
+
+<div class="login-container">
+    <div class="login-card">
+        <h1>🍔 QuickBitezzz</h1>
+        <p class="subtitle">College Login</p>
+
+        <input type="text" id="studentName" placeholder="Enter Name">
+        <input type="text" id="rollNo" placeholder="Enter Roll Number">
+
+        <button onclick="loginUser()">Login</button>
+
+        <div id="loginResult" class="login-result">
+            Please login with your college details
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+const API_BASE = "https://quickbitezzz-backend4.onrender.com";
+
+function loginUser() {
+    const name = document.getElementById("studentName").value.trim();
+    const rollNo = document.getElementById("rollNo").value.trim();
+
+    if (!name || !rollNo) {
+        document.getElementById("loginResult").innerHTML = "Please fill all fields.";
+        return;
+    }
+
+    fetch(`${API_BASE}/login`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            name: name,
+            roll_no: rollNo
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            localStorage.setItem("studentName", data.user.name);
+            localStorage.setItem("rollNo", data.user.roll_no);
+
+            document.getElementById("loginResult").innerHTML = "Login successful ✅ Redirecting...";
+            setTimeout(() => {
+                window.location.href = "index.html";
+            }, 1000);
+        } else {
+            document.getElementById("loginResult").innerHTML = data.message;
+        }
+    })
+    .catch(err => {
+        console.log("Login error:", err);
+        document.getElementById("loginResult").innerHTML = "Login failed. Check backend.";
+    });
+}
+</script>
+</body>
+    
+</body>
+</html>
