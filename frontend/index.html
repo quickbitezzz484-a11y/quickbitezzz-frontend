@@ -95,7 +95,7 @@
         }
 
         function loadSeats() {
-            fetch(`${API_BASE}`)
+            fetch(`${API_BASE}/seats`)
             .then(res => res.json())
             .then(data => {
                 document.getElementById("seatInfo").innerHTML =
@@ -105,7 +105,7 @@
         }
 
         function loadCurrentToken() {
-            fetch(`${API_BASE}`)
+            fetch(`${API_BASE}/current-token`)
             .then(res => res.json())
             .then(data => {
                 document.getElementById("currentToken").innerText = data.current_token;
@@ -113,7 +113,7 @@
             .catch(error => console.log("Token load error:", error));
         }
 
-        fetch(`${API_BASE}`)
+        fetch(`${API_BASE}/menu`)
         .then(res => res.json())
         .then(data => {
             menuData = data;
@@ -288,7 +288,7 @@
                 quantity: item.quantity
             }));
 
-            fetch(`${API_BASE}`, {
+            fetch(`${API_BASE}/order`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -363,14 +363,14 @@
                         <p><strong>Total Paid:</strong> ₹${data.total_amount ?? "N/A"}</p>
                     `;
 
-                    if (statusText === "Delivered") {
+                    if (statusText === "Ochi Tini Poo") {
                         clearInterval(trackingInterval);
                     }
                 })
                 .catch(error => {
                     console.log("Tracking error:", error);
                 });
-            }, 2000);
+            }, 5000);
         }
 
         function getStatusClass(status) {
