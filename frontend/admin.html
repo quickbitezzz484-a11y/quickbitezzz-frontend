@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuickBitezzz Admin Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .top-cards {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 25px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      min-width: 180px;
+      text-align: center;
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 28px;
+      color: #ff7043;
+    }
+
+    .card p {
+      margin: 8px 0 0;
+      color: #666;
+    }
+
+    .table-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      overflow: hidden;
+      max-width: 1200px;
+      margin: auto;
+      padding: 15px;
+    }
+
+    .token-control {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .token-control input {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .token-control button {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      background: #ff7043;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: #222;
+      color: white;
+      padding: 14px;
+      text-align: left;
+    }
+
+    td {
+      padding: 14px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+
+    tr:hover {
+      background: #f9f9f9;
+    }
+
+    .item-box div {
+      background: #f1f1f1;
+      margin-bottom: 6px;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+
+    .badge {
+      padding: 6px 12px;
+      border-radius: 20px;
+      color: white;
+      font-size: 14px;
+      display: inline-block;
+    }
+
+    .preparing {
+      background: orange;
+    }
+
+    .ready {
+      background: #007bff;
+    }
+
+    .delivered {
+      background: green;
+    }
+
+    .unknown {
+      background: gray;
+    }
+
+    .paid {
+      background: green;
+    }
+
+    .pending {
+      background: crimson;
+    }
+
+    .upi {
+      background: #6f42c1;
+    }
+
+    .admin-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .admin-actions button {
+      padding: 8px 10px;
+      border: none;
+      border-radius: 8px;
+      background: #ff7043;
+      color: white;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .admin-actions button:hover,
+    .token-control button:hover {
+      opacity: 0.9;
+    }
+
+    @media (max-width: 768px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+        width: 100%;
+      }
+
+      thead {
+        display: none;
+      }
+
+      tr {
+        margin-bottom: 15px;
+        border-bottom: 2px solid #ddd;
+        padding: 10px;
+      }
+
+      td {
+        border: none;
+        padding: 8px 10px;
+      }
+
+      td::before {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      td:nth-child(1)::before { content: "Order ID"; }
+      td:nth-child(2)::before { content: "Token"; }
+      td:nth-child(3)::before { content: "Items"; }
+      td:nth-child(4)::before { content: "Total"; }
+      td:nth-child(5)::before { content: "Payment Method"; }
+      td:nth-child(6)::before { content: "Payment"; }
+      td:nth-child(7)::before { content: "Status"; }
+      td:nth-child(8)::before { content: "Actions"; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🧾 QuickBitezzz Admin Dashboard</h1>
+
+  <div class="top-cards">
+    <div class="card">
+      <h2 id="totalOrders">0</h2>
+      <p>Total Orders</p>
+    </div>
+    <div class="card">
+      <h2 id="totalRevenue">₹0</h2>
+      <p>Total Revenue</p>
+    </div>
+    <div class="card">
+      <h2 id="paidOrders">0</h2>
+      <p>Paid Orders</p>
+    </div>
+    <div class="card">
+      <h2 id="pendingPayments">0</h2>
+      <p>Pending Payments</p>
+    </div>
+    <div class="card">
+      <h2 id="mostOrderedItem">--</h2>
+      <p>Most Ordered Item</p>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <div class="token-control">
+      <h3>Update Now Serving Token</h3>
+      <input type="number" id="newToken" placeholder="Enter token number">
+      <button onclick="updateToken()">Update</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Token</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Payment Method</th>
+          <th>Payment</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="ordersTableBody">
+        <tr>
+          <td colspan="8">Loading orders...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  
+
+  <script>
+    const API_BASE = "https://quickbitezzz-backend4.onrender.com";
+
+    function getStatusClass(status) {
+      const text = (status || "").toLowerCase();
+
+      if (text.includes("preparing")) return "preparing";
+      if (text.includes("ready")) return "ready";
+      if (text.includes("delivered") || text.includes("ochi")) return "delivered";
+
+      return "unknown";
+    }
+
+    function getPaymentClass(paymentStatus) {
+      const text = (paymentStatus || "").toLowerCase();
+
+      if (text.includes("paid")) return "paid";
+      if (text.includes("pending")) return "pending";
+
+      return "unknown";
+    }
+
+    async function fetchOrders() {
+      try {
+        const res = await fetch(`${API_BASE}/orders`);
+        const data = await res.json();
+
+        console.log("Orders from backend:", data);
+
+        const tableBody = document.getElementById("ordersTableBody");
+        const totalOrders = document.getElementById("totalOrders");
+        const totalRevenue = document.getElementById("totalRevenue");
+        const paidOrders = document.getElementById("paidOrders");
+        const pendingPayments = document.getElementById("pendingPayments");
+        const mostOrderedItem = document.getElementById("mostOrderedItem");
+
+        tableBody.innerHTML = "";
+        totalOrders.textContent = Array.isArray(data) ? data.length : 0;
+
+        let paidCount = 0;
+        let pendingCount = 0;
+        let revenue = 0;
+        let itemCount = {};
+
+        if (!Array.isArray(data) || data.length === 0) {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="8">No orders yet.</td>
+            </tr>
+          `;
+          totalRevenue.textContent = "₹0";
+          paidOrders.textContent = "0";
+          pendingPayments.textContent = "0";
+          mostOrderedItem.textContent = "--";
+          return;
+        }
+
+        data.forEach(order => {
+          let itemsHTML = "";
+
+          if (Array.isArray(order.items)) {
+            itemsHTML = order.items.map(item => {
+              if (typeof item === "string") {
+                itemCount[item] = (itemCount[item] || 0) + 1;
+                return `<div>${item}</div>`;
+              } else if (typeof item === "object" && item !== null) {
+                const itemName = item.name || "Unknown";
+                const qty = item.quantity || 1;
+                itemCount[itemName] = (itemCount[itemName] || 0) + qty;
+                return `<div>${itemName} x ${qty}</div>`;
+              } else {
+                return `<div>${item}</div>`;
+              }
+            }).join("");
+          } else {
+            itemsHTML = `<div>${order.items || ""}</div>`;
+          }
+
+          const orderStatus = order.status || "Unknown";
+          const paymentStatus = order.payment_status || "Pending";
+          const paymentMethod = order.payment_method || "N/A";
+          const totalAmount = Number(order.total_amount || 0);
+
+          if (paymentStatus.toLowerCase().includes("paid")) paidCount++;
+          if (paymentStatus.toLowerCase().includes("pending")) pendingCount++;
+
+          revenue += totalAmount;
+
+          const statusClass = getStatusClass(orderStatus);
+          const paymentClass = getPaymentClass(paymentStatus);
+
+          const row = `
+            <tr>
+              <td>${order.order_id ?? "N/A"}</td>
+              <td>${order.token_number ?? "N/A"}</td>
+              <td><div class="item-box">${itemsHTML}</div></td>
+              <td>₹${totalAmount}</td>
+              <td>${paymentMethod}</td>
+              <td><span class="badge ${paymentClass}">${paymentStatus}</span></td>
+              <td><span class="badge ${statusClass}">${orderStatus}</span></td>
+              <td>
+                <div class="admin-actions">
+                  <button onclick="updateStatus(${order.order_id}, 'Preparing')">Preparing</button>
+                  <button onclick="updateStatus(${order.order_id}, 'Ready Avuthundhi Chill macha')">Ready</button>
+                  <button onclick="updateStatus(${order.order_id}, 'Ochi Tini Poo')">Delivered</button>
+                </div>
+              </td>
+            </tr>
+          `;
+
+          tableBody.innerHTML += row;
+        });
+
+        paidOrders.textContent = paidCount;
+        pendingPayments.textContent = pendingCount;
+        totalRevenue.textContent = `₹${revenue}`;
+
+        let topItem = "--";
+        let maxCount = 0;
+
+        for (let item in itemCount) {
+          if (itemCount[item] > maxCount) {
+            maxCount = itemCount[item];
+            topItem = item;
+          }
+        }
+
+        mostOrderedItem.textContent = topItem;
+
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        document.getElementById("ordersTableBody").innerHTML = `
+          <tr>
+            <td colspan="8">Error loading orders.</td>
+          </tr>
+        `;
+      }
+    }
+
+    async function updateStatus(orderId, newStatus) {
+      try {
+        const res = await fetch(`${API_BASE}/admin/update-status/${orderId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            status: newStatus
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          fetchOrders();
+        } else {
+          alert("Failed to update status");
+        }
+      } catch (error) {
+        console.error("Status update error:", error);
+      }
+    }
+
+    async function updateToken() {
+      const token = document.getElementById("newToken").value;
+
+      if (!token) {
+        alert("Enter token number");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/admin/update-token/${token}`, {
+          method: "PUT"
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          alert("Token updated successfully");
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    }
+
+    fetchOrders();
+    setInterval(fetchOrders, 2000);
+  </script>
+
+</body>
+</html>
