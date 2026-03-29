@@ -12,11 +12,11 @@
         <header class="header">
             <h1>🍔 QuickBitezzz</h1>
             <img src="images/logo.jpg" alt="Website Logo" class="logo">
-            <p>Fast campus food ordering</p>
-            <span class="left-icon">🥤</span>
-            <span class="right-icon">🍕</span>
+            
+            
+            
             <div id="userInfo" class="seat-box"></div>
-            <button onclick="logoutUser()">Logout</button>
+            <button onclick="logoutUser()" class="logout-btn">Logout</button>
         </header>
 
         <section class="seat-section">
@@ -31,26 +31,35 @@
                 <p>Your Token: <strong id="yourToken">--</strong></p>
             </div>
         </section>
-
+    
         <section class="menu-section">
             <h2>Menu</h2>
             <div id="menu" class="menu-grid"></div>
         </section>
 
-        <section class="cart-section">
-            <h2>🛒 Cart</h2>
-            <ul id="cart" class="cart-list"></ul>
-            <h3 id="totalAmount">Total: ₹0</h3>
+        <!-- Floating Cart Button -->
+<div class="floating-cart-btn" onclick="toggleCart()">
+    🛒 <span id="cartCount">0</span>
+</div>
 
-            <label for="paymentMethod"><strong>Select Payment Method:</strong></label>
-            <select id="paymentMethod">
-                <option value="">-- Choose Payment Method --</option>
-                <option value="UPI">UPI</option>
-            </select>
+<!-- Slide Cart Panel -->
+<div id="cartPanel" class="cart-panel">
+    <div class="cart-header">
+        <h2>🛒 Your Cart</h2>
+        <span class="close-cart" onclick="toggleCart()">&times;</span>
+    </div>
 
-            <button id="payBtn" onclick="makePayment()">Pay Now</button>
-            <button id="orderBtn" onclick="placeOrder()">Place Order</button>
-        </section>
+    <ul id="cart" class="cart-list"></ul>
+    <h3 id="totalAmount">Total: ₹0</h3>
+
+    <label for="paymentMethod"><strong>Select Payment Method:</strong></label>
+    <select id="paymentMethod">
+        <option value="">-- Choose Payment Method --</option>
+        <option value="UPI">UPI</option>
+    </select>
+
+    <button id="orderBtn" onclick="placeOrder()">Place Order</button>
+</div>
 
         <div id="upiModal" class="upi-modal">
             <div class="upi-modal-content">
@@ -69,7 +78,7 @@
         </section>
     </div>
 
-  
+
 
     <script>
           const API_BASE = "https://quickbitezzz-backend4.onrender.com";
@@ -113,6 +122,7 @@
             .catch(error => console.log("Token load error:", error));
         }
 
+       
         fetch(`${API_BASE}/menu`)
         .then(res => res.json())
         .then(data => {
@@ -128,6 +138,7 @@
                 if (item.name === "Burger") emoji = "🍔";
                 if (item.name === "Pizza") emoji = "🍕";
                 if (item.name === "Fries") emoji = "🍟";
+                if (item.name === "Egg Noodles") emoji = "🍜"
 
                 card.innerHTML = `
                     <div class="food-emoji">${emoji}</div>
@@ -144,6 +155,7 @@
             console.log("Menu load error:", error);
             document.getElementById("menu").innerHTML = "<p>Menu failed to load.</p>";
         });
+
 
         function addToCart(itemId) {
             let item = menuData.find(food => food.id === itemId);
@@ -164,6 +176,17 @@
 
             displayCart();
         }
+
+
+        function toggleCart() {
+    const cartPanel = document.getElementById("cartPanel");
+
+    if (cartPanel.style.display === "block") {
+        cartPanel.style.display = "none";
+    } else {
+        cartPanel.style.display = "block";
+    }
+}
 
         function increaseQty(itemId) {
             let item = cart.find(cartItem => cartItem.id === itemId);
@@ -201,6 +224,8 @@
             let cartList = document.getElementById("cart");
             cartList.innerHTML = "";
 
+            document.getElementById("cartCount").innerText = cart.reduce((sum, item) => sum + item.quantity, 0);
+
             if (cart.length === 0) {
                 cartList.innerHTML = "<li>Cart is empty.</li>";
                 document.getElementById("totalAmount").innerHTML = "Total: ₹0";
@@ -229,117 +254,95 @@
             document.getElementById("totalAmount").innerHTML = `Total: ₹${getTotalAmount()}`;
         }
 
-        function makePayment() {
-            if (cart.length === 0) {
-                document.getElementById("result").innerHTML = "Cart is empty.";
-                return;
-            }
-
-            let paymentMethod = document.getElementById("paymentMethod").value;
-            let total = getTotalAmount();
-
-            if (!paymentMethod) {
-                document.getElementById("result").innerHTML = "Please select UPI payment method.";
-                return;
-            }
-
-            selectedPaymentMethod = paymentMethod;
-
-            if (paymentMethod === "UPI") {
-                document.getElementById("upiAmount").textContent = total;
-                document.getElementById("upiModal").style.display = "flex";
-
-                setTimeout(() => {
-                    isPaid = true;
-                    document.getElementById("upiModal").style.display = "none";
-
-                    document.getElementById("result").innerHTML = `
-                        <p><strong>UPI Payment Successful ✅</strong></p>
-                        <p><strong>Amount Paid:</strong> ₹${total}</p>
-                        <p><strong>Payment Method:</strong> UPI</p>
-                    `;
-                }, 3000);
-            }
-        }
+     
 
         function closeUPIPopup() {
             document.getElementById("upiModal").style.display = "none";
         }
 
         function placeOrder() {
-            if (!selectedPaymentMethod) {
-                document.getElementById("result").innerHTML = "Please select and confirm payment method first.";
-                return;
-            }
+    if (cart.length === 0) {
+        document.getElementById("result").innerHTML = "Cart is empty.";
+        return;
+    }
 
-            if (cart.length === 0) {
-                document.getElementById("result").innerHTML = "Cart is empty.";
-                return;
-            }
+    let paymentMethod = document.getElementById("paymentMethod").value;
+    let total = getTotalAmount();
 
-            if (!isPaid) {
-                document.getElementById("result").innerHTML = "Please complete payment first.";
-                return;
-            }
+    if (!paymentMethod) {
+        document.getElementById("result").innerHTML = "Please select UPI payment method.";
+        return;
+    }
 
-            let orderItems = cart.map(item => ({
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity
-            }));
+    selectedPaymentMethod = paymentMethod;
 
-            fetch(`${API_BASE}/order`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    item: orderItems,
-                    total: getTotalAmount(),
-                    payment_status: "Paid",
-                    payment_method: selectedPaymentMethod
-                })
+    // Show QR popup first
+    document.getElementById("upiAmount").textContent = total;
+    document.getElementById("upiModal").style.display = "flex";
+
+    // Simulate payment and auto-place order after 3 sec
+    setTimeout(() => {
+        isPaid = true;
+        document.getElementById("upiModal").style.display = "none";
+
+        let orderItems = cart.map(item => ({
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity
+        }));
+
+        fetch(`${API_BASE}/order`,{
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                item: orderItems,
+                total: getTotalAmount(),
+                payment_status: "Paid",
+                payment_method: selectedPaymentMethod
             })
-            .then(res => res.json())
-            .then(data => {
-                isPaid = false;
-                selectedPaymentMethod = "";
-                document.getElementById("paymentMethod").value = "";
+        })
+        .then(res => res.json())
+        .then(data => {
+            isPaid = false;
+            selectedPaymentMethod = "";
+            document.getElementById("paymentMethod").value = "";
 
-                currentOrderId = data.order.order_id;
-                document.getElementById("yourToken").innerText = data.order.token_number;
+            currentOrderId = data.order.order_id;
+            document.getElementById("yourToken").innerText = data.order.token_number;
 
-                let statusText = data.order.status || "Preparing";
+            let statusText = data.order.status || "Preparing";
 
-                document.getElementById("result").innerHTML = `
-                    <p><strong>Order placed successfully</strong></p>
-                    <p><strong>Order ID:</strong> ${data.order.order_id}</p>
-                    <p><strong>Token Number:</strong> ${data.order.token_number}</p>
-                    <p><strong>Status:</strong> 
-                        <span class="status ${getStatusClass(statusText)}">${statusText}</span>
-                    </p>
-                    <p><strong>Seats Left:</strong> ${data.available_seats}</p>
-                    <p><strong>Total Paid:</strong> ₹${data.order.total_amount}</p>
-                    <p><strong>Payment Method:</strong> ${data.order.payment_method}</p>
-                    <p><strong>Payment Status:</strong> ${data.order.payment_status}</p>
-                `;
+            document.getElementById("result").innerHTML = `
+                <p><strong>Order placed successfully ✅</strong></p>
+                <p><strong>Order ID:</strong> ${data.order.order_id}</p>
+                <p><strong>Token Number:</strong> ${data.order.token_number}</p>
+                <p><strong>Status:</strong> 
+                    <span class="status ${getStatusClass(statusText)}">${statusText}</span>
+                </p>
+                <p><strong>Seats Left:</strong> ${data.available_seats}</p>
+                <p><strong>Total Paid:</strong> ₹${data.order.total_amount}</p>
+                <p><strong>Payment Method:</strong> ${data.order.payment_method}</p>
+                <p><strong>Payment Status:</strong> ${data.order.payment_status}</p>
+            `;
 
-                cart = [];
-                displayCart();
-                loadSeats();
+            cart = [];
+            displayCart();
+            loadSeats();
 
-                if (trackingInterval) {
-                    clearInterval(trackingInterval);
-                }
+            if (trackingInterval) {
+                clearInterval(trackingInterval);
+            }
 
-                trackOrder();
-            })
-            .catch(error => {
-                document.getElementById("result").innerHTML = "Error placing order.";
-                console.log(error);
-            });
-        }
-
+            trackOrder();
+        })
+        .catch(error => {
+            document.getElementById("result").innerHTML = "Error placing order.";
+            console.log(error);
+        });
+    }, 3000);
+}
         function trackOrder() {
             trackingInterval = setInterval(() => {
                 fetch(`${API_BASE}/status/${currentOrderId}`)
@@ -373,19 +376,23 @@
             }, 5000);
         }
 
-        function getStatusClass(status) {
-            if (!status || typeof status !== "string") return "";
+       function getStatusClass(status) {
+    if (!status || typeof status !== "string") return "";
 
-            if (status.includes("Preparing")) return "status-preparing";
-            if (status.includes("Ready Avuthundhi Chill macha")) return "status-delivery";
-            if (status.includes("Ochi Tini Poo") || status.includes("ochi Tini Poo")) return "status-done";
+    if (status.includes("Preparing")) return "status-preparing";
+    if (status.includes("Almost")) return "status-delivery";
+    if (status.includes("Your")) return "status-done";
 
-            return "";
-        }
+    return "";
+}
 
-        loadSeats();
-        loadCurrentToken();
-        setInterval(loadCurrentToken, 3000);
+loadSeats();
+loadCurrentToken();
+
+setInterval(loadSeats, 3000);
+setInterval(loadCurrentToken, 3000);
+
+    
     </script>
 </body>
 </html>

@@ -238,6 +238,22 @@
       <button onclick="updateToken()">Update</button>
     </div>
 
+    <section class="seat-section">
+  <h2>🪑 Seat Control</h2>
+
+<div class="token-control">
+  <h3>Update Available Seats</h3>
+  <input type="number" id="newSeats" placeholder="Enter available seats">
+  <button onclick="updateSeats()">Update</button>
+</div>
+  <div class="admin-actions" style="margin-top: 12px;">
+    <button onclick="increaseSeats()">+ Increase Available Seat</button>
+    <button onclick="decreaseSeats()">- Decrease Available Seat</button>
+  </div>
+
+  <p id="seatUpdateMsg" style="margin-top:10px;"></p>
+</section>
+
     <table>
       <thead>
         <tr>
@@ -264,15 +280,25 @@
   <script>
     const API_BASE = "https://quickbitezzz-backend4.onrender.com";
 
+
+    const adminPass = prompt("Enter admin password:");
+
+if (adminPass !== "quickbiteadmin0718") {
+    alert("Access denied");
+    window.location.href = "index.html";
+}
+
     function getStatusClass(status) {
-      const text = (status || "").toLowerCase();
+  const text = (status || "").toLowerCase();
 
-      if (text.includes("preparing")) return "preparing";
-      if (text.includes("ready")) return "ready";
-      if (text.includes("delivered") || text.includes("ochi")) return "delivered";
+  if (text.includes("preparing")) return "preparing";
+  if (text.includes("Almost")) return "ready";
+  if (text.includes("Your")) return "delivered";
 
-      return "unknown";
-    }
+  return "unknown";
+}
+     
+    
 
     function getPaymentClass(paymentStatus) {
       const text = (paymentStatus || "").toLowerCase();
@@ -363,9 +389,9 @@
               <td><span class="badge ${statusClass}">${orderStatus}</span></td>
               <td>
                 <div class="admin-actions">
-                  <button onclick="updateStatus(${order.order_id}, 'Preparing')">Preparing</button>
-                  <button onclick="updateStatus(${order.order_id}, 'Ready Avuthundhi Chill macha')">Ready</button>
-                  <button onclick="updateStatus(${order.order_id}, 'Ochi Tini Poo')">Delivered</button>
+                  <button onclick="updateStatus(${order.order_id}, 'Preparing Your Order')">Preparing</button>
+<button onclick="updateStatus(${order.order_id}, 'Almost Ready!!!')">Ready</button>
+<button onclick="updateStatus(${order.order_id}, 'Your Order is Ready')">Completed</button>
                 </div>
               </td>
             </tr>
@@ -447,8 +473,80 @@
       }
     }
 
-    fetchOrders();
-    setInterval(fetchOrders, 2000);
+   
+
+async function loadSeatValues() {
+  try {
+    const res = await fetch(`${API_BASE}/seats`);
+    const data = await res.json();
+
+    document.getElementById("adminTotalSeats").value = data.total_seats;
+    document.getElementById("adminAvailableSeats").value = data.available_seats;
+  } catch (error) {
+    console.log("Seat fetch error:", error);
+  }
+}
+
+async function updateSeats() {
+  const seats = document.getElementById("newSeats").value;
+
+  if (!seats) {
+    alert("Enter seat number");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/update-seats/${seats}`, {
+      method: "PUT"
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Seats updated successfully");
+      fetchOrders();
+    }
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+async function increaseSeats() {
+  try {
+    const res = await fetch(`${API_BASE}/admin/increase-seats`, {
+      method: "PUT"
+    });
+
+    const data = await res.json();
+
+    document.getElementById("adminTotalSeats").value = data.total_seats;
+    document.getElementById("adminAvailableSeats").value = data.available_seats;
+    document.getElementById("seatUpdateMsg").innerText = "Available seats increased";
+  } catch (error) {
+    console.log("Increase seat error:", error);
+  }
+}
+
+async function decreaseSeats() {
+  try {
+    const res = await fetch(`${API_BASE}/admin/decrease-seats`, {
+      method: "PUT"
+    });
+
+    const data = await res.json();
+
+    document.getElementById("adminTotalSeats").value = data.total_seats;
+    document.getElementById("adminAvailableSeats").value = data.available_seats;
+    document.getElementById("seatUpdateMsg").innerText = "Available seats decreased";
+  } catch (error) {
+    console.log("Decrease seat error:", error);
+  }
+}
+
+ fetchOrders();
+ loadSeatValues();
+    setInterval(fetchOrders, 3000);
+  
   </script>
 
 </body>
