@@ -15,10 +15,12 @@
             
             
             
+            
             <div id="userInfo" class="seat-box"></div>
             <button onclick="logoutUser()" class="logout-btn">Logout</button>
         </header>
-
+        
+      
         <section class="seat-section">
             <h2>🪑 Seat Availability</h2>
             <div id="seatInfo" class="seat-box">Loading seats...</div>
@@ -82,8 +84,8 @@
 
     <script>
           const API_BASE = "https://quickbitezzz-backend4.onrender.com";
-        let cart = [];
-        let currentOrderId = null;
+        let cart = JSON.parse(localStorage.getItem("cart")) || [];
+        let currentOrderId = localStorage.getItem("currentOrderId") || null;
         let trackingInterval = null;
         let menuData = [];
         let isPaid = false;
@@ -92,14 +94,25 @@
         if (!localStorage.getItem("rollNo")) {
             window.location.href = "login.html";
         }
-
         document.getElementById("userInfo").innerHTML = `
-            Welcome, ${localStorage.getItem("studentName") || "Student"} 
-            (${localStorage.getItem("rollNo")})
-        `;
+    Welcome, ${localStorage.getItem("studentName") || "Student"} 
+    (${localStorage.getItem("rollNo")})
+`;
+  const savedToken = localStorage.getItem("yourToken");
+        if (savedToken) {
+            document.getElementById("yourToken").innerText = savedToken;
+        }
+
 
         function logoutUser() {
+            localStorage.removeItem("cart");
+            localStorage.removeItem("currentOrderId");
+            localStorage.removeItem("yourToken");
+            localStorage.removeItem("studentName");
+            localStorage.removeItem("rollNo");
             localStorage.clear();
+
+            
             window.location.href = "login.html";
         }
 
@@ -227,6 +240,9 @@
         }
 
         function displayCart() {
+            localStorage.setItem("cart", JSON.stringify(cart));
+
+
             let cartList = document.getElementById("cart");
             cartList.innerHTML = "";
 
@@ -316,6 +332,8 @@
             document.getElementById("paymentMethod").value = "";
 
             currentOrderId = data.order.order_id;
+            localStorage.setItem("currentOrderId", currentOrderId);
+            localStorage.setItem("yourToken", data.order.token_number);
             document.getElementById("yourToken").innerText = data.order.token_number;
 
             let statusText = data.order.status || "Preparing";
@@ -334,6 +352,7 @@
             `;
 
             cart = [];
+            localStorage.removeItem("cart");
             displayCart();
             loadSeats();
 
@@ -350,37 +369,41 @@
     }, 3000);
 }
         function trackOrder() {
-            trackingInterval = setInterval(() => {
-                fetch(`${API_BASE}/status/${currentOrderId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.error) {
-                        document.getElementById("result").innerHTML = "Order not found.";
-                        clearInterval(trackingInterval);
-                        return;
-                    }
+    function fetchOrderStatus() {
+        fetch(`${API_BASE}/status/${currentOrderId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById("result").innerHTML = "Order not found.";
+                clearInterval(trackingInterval);
+                return;
+            }
 
-                    let statusText = data.status || "Unknown";
+            let statusText = data.status || "Unknown";
 
-                    document.getElementById("result").innerHTML = `
-                        <p><strong>Order ID:</strong> ${data.order_id ?? "N/A"}</p>
-                        <p><strong>Token Number:</strong> ${data.token_number ?? "N/A"}</p>
-                        <p><strong>Status:</strong> 
-                            <span class="status ${getStatusClass(statusText)}">${statusText}</span>
-                        </p>
-                        <p><strong>Seats Left:</strong> ${data.seats_left ?? "N/A"}</p>
-                        <p><strong>Total Paid:</strong> ₹${data.total_amount ?? "N/A"}</p>
-                    `;
+            document.getElementById("result").innerHTML = `
+                <p><strong>Order ID:</strong> ${data.order_id ??  "N/A"}</p>
+                <p><strong>Token Number:</strong> ${data.token_number ?? "N/A"}</p>
+                <p><strong>Status:</strong> 
+                    <span class="status ${getStatusClass(statusText)}">${statusText}</span>
+                </p>
+                <p><strong>Seats Left:</strong> ${data.seats_left ?? "N/A"}</p>
+                <p><strong>Total Paid:</strong> ₹${data.total_amount ?? "N/A"}</p>
+            `;
 
-                    if (statusText === "Ochi Tini Poo") {
-                        clearInterval(trackingInterval);
-                    }
-                })
-                .catch(error => {
-                    console.log("Tracking error:", error);
-                });
-            }, 5000);
-        }
+            if (statusText === "Your Order is Ready") {
+                clearInterval(trackingInterval);
+                localStorage.removeItem("currentOrderId");
+            }
+        })
+        .catch(error => {
+            console.log("Tracking error:", error);
+        });
+    }
+
+    fetchOrderStatus(); // run immediately once
+    trackingInterval = setInterval(fetchOrderStatus, 5000);
+}
 
        function getStatusClass(status) {
     if (!status || typeof status !== "string") return "";
@@ -395,8 +418,12 @@
 loadSeats();
 loadCurrentToken();
 
+if (currentOrderId){
+    trackOrder();
+}
 setInterval(loadSeats, 3000);
 setInterval(loadCurrentToken, 3000);
+displayCart();
 
     
     </script>
