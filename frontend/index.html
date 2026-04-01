@@ -12,7 +12,7 @@
         <header class="header">
             <h1>🍔 QuickBitezzz</h1>
             <img src="images/logo.jpg" alt="Website Logo" class="logo">
-            
+                3
             
             
             
@@ -404,17 +404,17 @@
     fetchOrderStatus(); // run immediately once
     trackingInterval = setInterval(fetchOrderStatus, 5000);
 }
-
-       function getStatusClass(status) {
+function getStatusClass(status) {
     if (!status || typeof status !== "string") return "";
 
-    if (status.includes("Preparing")) return "status-preparing";
-    if (status.includes("Almost")) return "status-delivery";
-    if (status.includes("Your")) return "status-done";
+    let s = status.toLowerCase().trim();
+
+    if (s.includes("preparing")) return "status-preparing";
+    if (s.includes("almost")) return "status-delivery";
+    if (s.includes("ready")) return "status-done";
 
     return "";
 }
-
 loadSeats();
 loadCurrentToken();
 
