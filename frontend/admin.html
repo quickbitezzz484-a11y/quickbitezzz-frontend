@@ -1,551 +1,511 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QuickBitezzz Admin Dashboard</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #474040;
-      margin: 0;
-      padding: 20px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickBitezzz Admin</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #2c3e50;
+            margin: 0;
+            padding: 20px;
+        }
+        .admin-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+        h1 {
+            color: #1a1a1a;
+            font-size: 28px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 12px;
+        }
+        h2 {
+            color: #e65100;
+            font-size: 22px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        .seat-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            background-color: #fff3e0;
+            padding: 18px;
+            border-radius: 8px;
+            border: 1px solid #ffe0b2;
+            margin-bottom: 25px;
+        }
+        .seat-info-badge {
+            font-size: 16px;
+            font-weight: bold;
+            color: #d84315;
+            background-color: #ffe0b2;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+        .seat-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .seat-input-group label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e65100;
+        }
+        .seat-controls input {
+            padding: 8px 10px;
+            width: 100px;
+            border: 1px solid #cccccc;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333333;
+            outline: none;
+        }
+        .seat-controls button {
+            padding: 8px 16px;
+            background-color: #ff6f00;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        /* Token Controls CSS */
+        .token-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            background-color: #e8f5e9;
+            padding: 18px;
+            border-radius: 8px;
+            border: 1px solid #c8e6c9;
+            margin-bottom: 25px;
+        }
+        .token-info-badge {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1b5e20;
+            background-color: #c8e6c9;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+        .token-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .token-input-group label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2e7d32;
+        }
+        .token-controls input {
+            padding: 8px 10px;
+            width: 100px;
+            border: 1px solid #cccccc;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333333;
+            outline: none;
+        }
+        .btn-token-set {
+            padding: 8px 16px;
+            background-color: #2e7d32;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn-token-next {
+            padding: 8px 16px;
+            background-color: #1565c0;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-      color:wheat
-    }
-
-    .top-cards {
-      display: flex;
-      gap: 20px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-bottom: 25px;
-    }
-
-    .card {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-      min-width: 180px;
-      text-align: center;
-    }
-
-    .card h2 {
-      margin: 0;
-      font-size: 28px;
-      color: #ff7043;
-    }
-
-    .card p {
-      margin: 8px 0 0;
-      color: #666;
-    }
-
-    .table-container {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-      overflow: hidden;
-      max-width: 1200px;
-      margin: auto;
-      padding: 15px;
-    }
-
-    .token-control {
-      margin-bottom: 20px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .token-control input {
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-
-    .token-control button {
-      padding: 10px 14px;
-      border: none;
-      border-radius: 8px;
-      background: #ff7043;
-      color: white;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    th {
-      background: #222;
-      color: white;
-      padding: 14px;
-      text-align: left;
-    }
-
-    td {
-      padding: 14px;
-      border-bottom: 1px solid #eee;
-      vertical-align: top;
-    }
-
-    tr:hover {
-      background: #f9f9f9;
-    }
-
-    .item-box div {
-      background: #f1f1f1;
-      margin-bottom: 6px;
-      padding: 6px 10px;
-      border-radius: 6px;
-    }
-
-    .badge {
-      padding: 6px 12px;
-      border-radius: 20px;
-      color: white;
-      font-size: 14px;
-      display: inline-block;
-    }
-
-    .preparing {
-      background: orange;
-    }
-
-    .ready {
-      background: #007bff;
-    }
-
-    .delivered {
-      background: green;
-    }
-
-    .unknown {
-      background: gray;
-    }
-
-    .paid {
-      background: green;
-    }
-
-    .pending {
-      background: crimson;
-    }
-
-    .upi {
-      background: #6f42c1;
-    }
-
-    .admin-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .admin-actions button {
-      padding: 8px 10px;
-      border: none;
-      border-radius: 8px;
-      background: #ff7043;
-      color: white;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .admin-actions button:hover,
-    .token-control button:hover {
-      opacity: 0.9;
-    }
-
-    @media (max-width: 768px) {
-      table, thead, tbody, th, td, tr {
-        display: block;
-        width: 100%;
-      }
-
-      thead {
-        display: none;
-      }
-
-      tr {
-        margin-bottom: 15px;
-        border-bottom: 2px solid #ddd;
-        padding: 10px;
-      }
-
-      td {
-        border: none;
-        padding: 8px 10px;
-      }
-
-      td::before {
-        font-weight: bold;
-        display: block;
-        margin-bottom: 5px;
-      }
-
-      td:nth-child(1)::before { content: "Order ID"; }
-      td:nth-child(2)::before { content: "Token"; }
-      td:nth-child(3)::before { content: "Items"; }
-      td:nth-child(4)::before { content: "Total"; }
-      td:nth-child(5)::before { content: "Payment Method"; }
-      td:nth-child(6)::before { content: "Payment"; }
-      td:nth-child(7)::before { content: "Status"; }
-      td:nth-child(8)::before { content: "Actions"; }
-    }
-  </style>
+        .preparing-banner {
+            background-color: #e3f2fd;
+            border: 2px dashed #1565c0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .preparing-banner h3 {
+            margin: 0;
+            color: #0d47a1;
+            font-size: 18px;
+        }
+        .preparing-token {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1565c0;
+            background: #ffffff;
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid #90caf9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        th {
+            background-color: #1a252f;
+            color: #ffffff;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 13px;
+        }
+        tbody tr:hover {
+            background-color: #f9f9f9;
+        }
+        .token-badge {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1565c0;
+            background-color: #e3f2fd;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+            border: 1px solid #bbdefb;
+        }
+        .btn-status {
+            padding: 7px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .btn-preparing { background-color: #ff9800; }
+        .btn-ready { background-color: #2e7d32; }
+        .btn-delete {
+            background-color: #d32f2f;
+            color: #ffffff;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .status-tag {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #ffffff;
+            display: inline-block;
+        }
+        .status-preparing { background-color: #ff9800; }
+        .status-done { background-color: #2e7d32; }
+        .paid-tag { 
+            background-color: #e8f5e9; 
+            color: #1b5e20; 
+            padding: 4px 10px; 
+            border-radius: 12px; 
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #a5d6a7;
+        }
+        .no-orders {
+            text-align: center;
+            color: #7f8c8d;
+            font-weight: bold;
+            padding: 25px;
+        }
+    </style>
 </head>
 <body>
 
-  <h1>🧾 QuickBitezzz Admin Dashboard</h1>
+    <div class="admin-container">
+        <h1>👨‍🍳 Kitchen Dashboard</h1>
 
-  <div class="top-cards">
-    <div class="card">
-      <h2 id="totalOrders">0</h2>
-      <p>Total Orders</p>
-    </div>
-    <div class="card">
-      <h2 id="totalRevenue">₹0</h2>
-      <p>Total Revenue</p>
-    </div>
-    <div class="card">
-      <h2 id="paidOrders">0</h2>
-      <p>Paid Orders</p>
-    </div>
-    <div class="card">
-      <h2 id="pendingPayments">0</h2>
-      <p>Pending Payments</p>
-    </div>
-    <div class="card">
-      <h2 id="mostOrderedItem">--</h2>
-      <p>Most Ordered Item</p>
-    </div>
-  </div>
+        <!-- Seat Controls -->
+        <div class="seat-controls">
+            <div id="seatDisplay" class="seat-info-badge">🪑 Seats: Loading...</div>
+            <div class="seat-input-group">
+                <label>Available:</label>
+                <input type="number" id="availSeatInput" placeholder="Avail">
+                <label>Total:</label>
+                <input type="number" id="totalSeatInput" placeholder="Total">
+                <button onclick="updateSeats()">Update Seats</button>
+            </div>
+        </div>
 
-  <div class="table-container">
-    <div class="token-control">
-      <h3>Update Now Serving Token</h3>
-      <input type="number" id="newToken" placeholder="Enter token number">
-      <button onclick="updateToken()">Update</button>
+        <!-- Token Controls -->
+        <div class="token-controls">
+            <div id="tokenDisplay" class="token-info-badge">🎫 Now Serving Token: Loading...</div>
+            <div class="token-input-group">
+                <label>Set Token:</label>
+                <input type="number" id="currentTokenInput" placeholder="Token #">
+                <button class="btn-token-set" onclick="updateToken()">Set Token</button>
+                <button class="btn-token-next" onclick="incrementToken()">Next Token (+1)</button>
+            </div>
+        </div>
+
+        <!-- Currently Preparing Order Banner -->
+        <div class="preparing-banner">
+            <h3>🔥 Order Currently Being Prepared:</h3>
+            <div id="nowPreparingToken" class="preparing-token">None</div>
+        </div>
+
+        <h2>Incoming Orders</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Token</th>
+                    <th>Student Details</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Payment Method</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="ordersTable">
+                <tr><td colspan="9" class="no-orders">Loading orders...</td></tr>
+            </tbody>
+        </table>
     </div>
 
-    <section class="seat-section">
-  <h2>🪑 Seat Control</h2>
+    <script>
+        // Updated API base to live Render backend
+        const API_BASE = "http://localhost:5000";
 
-<div class="token-control">
-  <h3>Update Available Seats</h3>
-  <input type="number" id="newSeats" placeholder="Enter available seats">
-  <button onclick="updateSeats()">Update</button>
-</div>
- 
+        async function fetchSeats() {
+            try {
+                const res = await fetch(`${API_BASE}/seats`);
+                const data = await res.json();
+                document.getElementById("seatDisplay").innerText = `🪑 Available Seats: ${data.available_seats} / ${data.total_seats}`;
+                
+                if (!document.getElementById("availSeatInput").value) {
+                    document.getElementById("availSeatInput").value = data.available_seats;
+                }
+                if (!document.getElementById("totalSeatInput").value) {
+                    document.getElementById("totalSeatInput").value = data.total_seats;
+                }
+            } catch (err) {
+                console.error("Error fetching seats:", err);
+            }
+        }
+
+        async function updateSeats() {
+            const availSeats = document.getElementById("availSeatInput").value;
+            const totalSeats = document.getElementById("totalSeatInput").value;
+            
+            try {
+                await fetch(`${API_BASE}/seats`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        available_seats: parseInt(availSeats),
+                        total_seats: parseInt(totalSeats)
+                    })
+                });
+                alert("Seats updated successfully!");
+                fetchSeats();
+            } catch (err) {
+                console.error("Error updating seats:", err);
+            }
+        }
+
+        /* Token Functions */
+        async function fetchToken() {
+            try {
+                const res = await fetch(`${API_BASE}/current-token`);
+                const data = await res.json();
+                const currentToken = data.current_token;
+
+                document.getElementById("tokenDisplay").innerText = `🎫 Now Serving Token: #${currentToken}`;
+                
+                if (!document.getElementById("currentTokenInput").value) {
+                    document.getElementById("currentTokenInput").value = currentToken;
+                }
+            } catch (err) {
+                console.error("Error fetching token:", err);
+            }
+        }
+
+        async function updateToken() {
+            const tokenVal = parseInt(document.getElementById("currentTokenInput").value);
+            if (isNaN(tokenVal)) return alert("Please enter a valid token number");
+
+            try {
+                await fetch(`${API_BASE}/admin/update-token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ current_token: tokenVal })
+                });
+                alert("Token updated successfully!");
+                fetchToken();
+            } catch (err) {
+                console.error("Error updating token:", err);
+                alert("Failed to update token");
+            }
+        }
+
+        async function incrementToken() {
+            const currentText = document.getElementById("tokenDisplay").innerText;
+            const currentToken = parseInt(currentText.replace(/[^0-9]/g, '')) || 0;
+            const nextToken = currentToken + 1;
+            
+            document.getElementById("currentTokenInput").value = nextToken;
+            updateToken();
+        }
+
+        async function fetchOrders() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/orders`);
+                const orders = await res.json();
+                
+                const tableBody = document.getElementById("ordersTable");
+                tableBody.innerHTML = "";
+
+                let currentlyPreparing = null;
+
+                if (!Array.isArray(orders) || orders.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="9" class="no-orders">No active orders</td></tr>`;
+                    document.getElementById("nowPreparingToken").innerText = "None";
+                    return;
+                }
+
+                orders.forEach(order => {
+                    let statusStr = order.status || "Preparing Your Order";
+                    if (statusStr === "Preparing Your Order") {
+                        currentlyPreparing = order;
+                    }
+
+                    const row = document.createElement("tr");
+
+                    let itemsSummary = "N/A";
+                    if (Array.isArray(order.items)) {
+                        itemsSummary = order.items.map(i => `${i.name} x ${i.quantity}`).join(", ");
+                    } else if (typeof order.items === 'string') {
+                        itemsSummary = order.items;
+                    }
+
+                    let studentInfo = `${order.student_name || 'N/A'}<br><small style="color:#666;">(${order.roll_no || 'N/A'})</small>`;
+                    let statusClass = statusStr.toLowerCase().includes("ready") ? "status-done" : "status-preparing";
+
+                    row.innerHTML = `
+                        <td><strong>#${order.order_id ?? 'N/A'}</strong></td>
+                        <td><span class="token-badge">Token #${order.token_number ?? 'N/A'}</span></td>
+                        <td>${studentInfo}</td>
+                        <td>${itemsSummary}</td>
+                        <td><strong>₹${order.total_amount ?? 0}</strong></td>
+                        <td>${order.payment_method || 'UPI'}</td>
+                        <td><span class="paid-tag">${order.payment_status || 'Paid'}</span></td>
+                        <td><span class="status-tag ${statusClass}">${statusStr}</span></td>
+                        <td>
+                            <button class="btn-status btn-preparing" onclick="updateOrderStatus(${order.order_id}, 'Preparing Your Order')">Preparing</button>
+                            <button class="btn-status btn-ready" onclick="updateOrderStatus(${order.order_id}, 'Your Order is Ready')">Ready</button>
+                            <button class="btn-delete" onclick="deleteOrder(${order.order_id})">❌</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                if (currentlyPreparing) {
+                    document.getElementById("nowPreparingToken").innerText = `Order #${currentlyPreparing.order_id} (Token #${currentlyPreparing.token_number})`;
+                } else {
+                    document.getElementById("nowPreparingToken").innerText = "None";
+                }
+
+            } catch (err) {
+                console.error("Error fetching orders:", err);
+            }
+        }
+
+        async function updateOrderStatus(orderId, newStatus) {
+            try {
+                const res = await fetch(`${API_BASE}/admin/update-status/${orderId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                const data = await res.json();
+                if (data.success || res.ok) {
+                    fetchOrders();
+                }
+            } catch (err) {
+                console.error("Error updating status:", err);
+            }
+        }
+
+        async function deleteOrder(orderId) {
+            if (!confirm(`Are you sure you want to clear Order #${orderId}?`)) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/delete-order/${orderId}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                });
+
+                const data = await res.json();
+
+                if (data.success || res.ok) {
+                    fetchOrders();
+                    fetchSeats();
+                } else {
+                    alert("Failed to delete order: " + (data.message || "Order not found"));
+                }
+            } catch (error) {
+                console.error("Delete order error:", error);
+                alert("Error deleting order.");
+            }
+        }
+
+        fetchSeats();
+        fetchToken();
+        fetchOrders();
+        setInterval(fetchSeats, 3000);
+        setInterval(fetchToken, 3000);
+        setInterval(fetchOrders, 3000);
   
-  <p id="seatUpdateMsg" style="margin-top:10px;"></p>
-</section>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Order ID</th>
-          <th>Token</th>
-          <th>Items</th>
-          <th>Total</th>
-          <th>Payment Method</th>
-          <th>Payment</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="ordersTableBody">
-        <tr>
-          <td colspan="8">Loading orders...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  
-
-  <script>
-    const API_BASE = "https://quickbitezzz-backend4.onrender.com";
-
-
-    const adminPass = prompt("Enter admin password:");
-
-if (adminPass !== "quickbiteadmin0718") {
-    alert("Access denied");
-    window.location.href = "index.html";
-}
-
-    function getStatusClass(status) {
-  const text = (status || "").toLowerCase();
-
-  if (text.includes("preparing")) return "preparing";
-  if (text.includes("Almost")) return "ready";
-  if (text.includes("Your")) return "delivered";
-
-  return "unknown";
-}
-     
-    
-
-    function getPaymentClass(paymentStatus) {
-      const text = (paymentStatus || "").toLowerCase();
-
-      if (text.includes("paid")) return "paid";
-      if (text.includes("pending")) return "pending";
-
-      return "unknown";
-    }
-
-    async function fetchOrders() {
-      try {
-        const res = await fetch(`${API_BASE}/orders`);
-        const data = await res.json();
-
-        console.log("Orders from backend:", data);
-
-        const tableBody = document.getElementById("ordersTableBody");
-        const totalOrders = document.getElementById("totalOrders");
-        const totalRevenue = document.getElementById("totalRevenue");
-        const paidOrders = document.getElementById("paidOrders");
-        const pendingPayments = document.getElementById("pendingPayments");
-        const mostOrderedItem = document.getElementById("mostOrderedItem");
-
-        tableBody.innerHTML = "";
-        totalOrders.textContent = Array.isArray(data) ? data.length : 0;
-
-        let paidCount = 0;
-        let pendingCount = 0;
-        let revenue = 0;
-        let itemCount = {};
-
-        if (!Array.isArray(data) || data.length === 0) {
-          tableBody.innerHTML = `
-            <tr>
-              <td colspan="8">No orders yet.</td>
-            </tr>
-          `;
-          totalRevenue.textContent = "₹0";
-          paidOrders.textContent = "0";
-          pendingPayments.textContent = "0";
-          mostOrderedItem.textContent = "--";
-          return;
-        }
-
-        data.forEach(order => {
-          let itemsHTML = "";
-
-          if (Array.isArray(order.items)) {
-            itemsHTML = order.items.map(item => {
-              if (typeof item === "string") {
-                itemCount[item] = (itemCount[item] || 0) + 1;
-                return `<div>${item}</div>`;
-              } else if (typeof item === "object" && item !== null) {
-                const itemName = item.name || "Unknown";
-                const qty = item.quantity || 1;
-                itemCount[itemName] = (itemCount[itemName] || 0) + qty;
-                return `<div>${itemName} x ${qty}</div>`;
-              } else {
-                return `<div>${item}</div>`;
-              }
-            }).join("");
-          } else {
-            itemsHTML = `<div>${order.items || ""}</div>`;
-          }
-
-          const orderStatus = order.status || "Unknown";
-          const paymentStatus = order.payment_status || "Pending";
-          const paymentMethod = order.payment_method || "N/A";
-          const totalAmount = Number(order.total_amount || 0);
-
-          if (paymentStatus.toLowerCase().includes("paid")) paidCount++;
-          if (paymentStatus.toLowerCase().includes("pending")) pendingCount++;
-
-          revenue += totalAmount;
-
-          const statusClass = getStatusClass(orderStatus);
-          const paymentClass = getPaymentClass(paymentStatus);
-
-          const row = `
-            <tr>
-              <td>${order.order_id ?? "N/A"}</td>
-              <td>${order.token_number ?? "N/A"}</td>
-              <td><div class="item-box">${itemsHTML}</div></td>
-              <td>₹${totalAmount}</td>
-              <td>${paymentMethod}</td>
-              <td><span class="badge ${paymentClass}">${paymentStatus}</span></td>
-              <td><span class="badge ${statusClass}">${orderStatus}</span></td>
-              <td>
-                <div class="admin-actions">
-                  <button onclick="updateStatus(${order.order_id}, 'Preparing Your Order')">Preparing</button>
-<button onclick="updateStatus(${order.order_id}, 'Almost Ready!!!')">Ready</button>
-<button onclick="updateStatus(${order.order_id}, 'Your Order is Ready')">Completed</button>
-                </div>
-              </td>
-            </tr>
-          `;
-
-          tableBody.innerHTML += row;
-        });
-
-        paidOrders.textContent = paidCount;
-        pendingPayments.textContent = pendingCount;
-        totalRevenue.textContent = `₹${revenue}`;
-
-        let topItem = "--";
-        let maxCount = 0;
-
-        for (let item in itemCount) {
-          if (itemCount[item] > maxCount) {
-            maxCount = itemCount[item];
-            topItem = item;
-          }
-        }
-
-        mostOrderedItem.textContent = topItem;
-
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-        document.getElementById("ordersTableBody").innerHTML = `
-          <tr>
-            <td colspan="8">Error loading orders.</td>
-          </tr>
-        `;
-      }
-    }
-
-    async function updateStatus(orderId, newStatus) {
-      try {
-        const res = await fetch(`${API_BASE}/admin/update-status/${orderId}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            status: newStatus
-          })
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-          fetchOrders();
-        } else {
-          alert("Failed to update status");
-        }
-      } catch (error) {
-        console.error("Status update error:", error);
-      }
-    }
-
-    async function updateToken() {
-      const token = document.getElementById("newToken").value;
-
-      if (!token) {
-        alert("Enter token number");
-        return;
-      }
-
-      try {
-        const res = await fetch(`${API_BASE}/admin/update-token/${token}`, {
-          method: "PUT"
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-          alert("Token updated successfully");
-        }
-      } catch (err) {
-        console.log(err);
-      }
-    }
-
-   
-
-async function loadSeatValues() {
-  try {
-    const res = await fetch(`${API_BASE}/seats`);
-    const data = await res.json();
-
-    document.getElementById("adminTotalSeats").value = data.total_seats;
-    document.getElementById("adminAvailableSeats").value = data.available_seats;
-  } catch (error) {
-    console.log("Seat fetch error:", error);
-  }
-}
-
-async function updateSeats() {
-  const seats = document.getElementById("newSeats").value;
-
-  if (!seats) {
-    alert("Enter seat number");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/admin/update-seats/${seats}`, {
-      method: "PUT"
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      alert("Seats updated successfully");
-      fetchOrders();
-    }
-  } catch (err) {
-    console.log(err);
-  }
-}
-
-async function increaseSeats() {
-  try {
-    const res = await fetch(`${API_BASE}/admin/increase-seats`, {
-      method: "PUT"
-    });
-
-    const data = await res.json();
-
-    document.getElementById("adminTotalSeats").value = data.total_seats;
-    document.getElementById("adminAvailableSeats").value = data.available_seats;
-    document.getElementById("seatUpdateMsg").innerText = "Available seats increased";
-  } catch (error) {
-    console.log("Increase seat error:", error);
-  }
-}
-
-async function decreaseSeats() {
-  try {
-    const res = await fetch(`${API_BASE}/admin/decrease-seats`, {
-      method: "PUT"
-    });
-
-    const data = await res.json();
-
-    document.getElementById("adminTotalSeats").value = data.total_seats;
-    document.getElementById("adminAvailableSeats").value = data.available_seats;
-    document.getElementById("seatUpdateMsg").innerText = "Available seats decreased";
-  } catch (error) {
-    console.log("Decrease seat error:", error);
-  }
-}
-
- fetchOrders();
- loadSeatValues();
-    setInterval(fetchOrders, 3000);
-  
-  </script>
-
+    </script>
 </body>
 </html>
