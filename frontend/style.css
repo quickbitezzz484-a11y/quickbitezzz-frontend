@@ -18,11 +18,13 @@ body {
 }
 
 .logo-img {
-    max-width: 250px; /* Adjust this width to fit your header (e.g., 180px - 250px) */
-    height: auto;     /* Maintains image aspect ratio without stretching */
-    display: fill;
-    margin: 0 auto;   /* Centers the logo */
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Keeps logo in correct proportions without stretching */
+    object-position: center;
+    display: block;
 }
+
 .header {
     position: relative;
 }
