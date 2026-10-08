@@ -10,7 +10,6 @@
 
     <div class="container">
         <header class="header-banner">
-            <!-- Ensure this path matches your updated logo filename (e.g., logo.png or images/logo.png) -->
             <img src="images/logo.jpg?v=2" alt="Website Logo" class="logo-img">
         </header>
 
@@ -293,7 +292,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        item: orderItems,
+                        items: orderItems,
                         total: getTotalAmount(),
                         payment_status: "Paid",
                         payment_method: selectedPaymentMethod,
