@@ -314,23 +314,16 @@
     <script>
         const API_BASE = "https://quickbitezzz-backend4.onrender.com";
 
-        // Helper function to safely fetch JSON
         async function safeFetchJson(url, options = {}) {
             try {
                 const res = await fetch(url, options);
-                if (!res.ok) {
-                    console.warn(`API call to ${url} failed with status: ${res.status}`);
-                    return null;
-                }
+                if (!res.ok) return null;
                 const contentType = res.headers.get("content-type");
                 if (contentType && contentType.includes("application/json")) {
                     return await res.json();
-                } else {
-                    console.warn(`Response from ${url} was not JSON.`);
-                    return null;
                 }
+                return null;
             } catch (err) {
-                console.error(`Network error for ${url}:`, err);
                 return null;
             }
         }
@@ -381,11 +374,20 @@
             const tokenVal = parseInt(document.getElementById("currentTokenInput").value);
             if (isNaN(tokenVal)) return alert("Please enter a valid token number");
 
-            const res = await safeFetchJson(`${API_BASE}/admin/set-token`, {
+            let res = await safeFetchJson(`${API_BASE}/set-token`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token: tokenVal })
             });
+
+            if (!res) {
+                res = await safeFetchJson(`${API_BASE}/admin/set-token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: tokenVal })
+                });
+            }
+
             if (res) {
                 alert("Token updated successfully!");
                 fetchToken();
@@ -393,15 +395,27 @@
         }
 
         async function incrementToken() {
-            await safeFetchJson(`${API_BASE}/admin/next-token`, {
+            let res = await safeFetchJson(`${API_BASE}/next-token`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             });
+
+            if (!res) {
+                res = await safeFetchJson(`${API_BASE}/admin/next-token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
             fetchToken();
         }
 
         async function fetchOrders() {
-            const orders = await safeFetchJson(`${API_BASE}/admin/orders`);
+            // Tries /orders first, then /admin/orders as fallback
+            let orders = await safeFetchJson(`${API_BASE}/orders`);
+            if (!orders) {
+                orders = await safeFetchJson(`${API_BASE}/admin/orders`);
+            }
+
             const tableBody = document.getElementById("ordersTable");
 
             if (!orders || !Array.isArray(orders) || orders.length === 0) {
@@ -458,11 +472,20 @@
         }
 
         async function updateOrderStatus(orderId, newStatus) {
-            const res = await safeFetchJson(`${API_BASE}/admin/update-status/${orderId}`, {
+            let res = await safeFetchJson(`${API_BASE}/update-status/${orderId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus })
             });
+
+            if (!res) {
+                res = await safeFetchJson(`${API_BASE}/admin/update-status/${orderId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+            }
+
             if (res) {
                 fetchOrders();
             }
@@ -471,10 +494,17 @@
         async function deleteOrder(orderId) {
             if (!confirm(`Are you sure you want to clear Order #${orderId}?`)) return;
 
-            const res = await safeFetchJson(`${API_BASE}/admin/delete-order/${orderId}`, {
+            let res = await safeFetchJson(`${API_BASE}/delete-order/${orderId}`, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" }
             });
+
+            if (!res) {
+                res = await safeFetchJson(`${API_BASE}/admin/delete-order/${orderId}`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" }
+                });
+            }
 
             if (res) {
                 fetchOrders();
