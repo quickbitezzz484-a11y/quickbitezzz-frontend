@@ -5,30 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QuickBitezzz</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .admin-link-btn {
-            background-color: #1a252f;
-            color: #ffffff;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            margin-right: 10px;
-            font-size: 14px;
-        }
-        .admin-link-btn:hover {
-            background-color: #2c3e50;
-        }
-    </style>
 </head>
 <body>
 
     <div class="container">
         <header class="header-banner">
-            <img src="images/App.jpg" alt="Website Logo" class="logo-img">
-            
+            <!-- Ensure this path matches your updated logo filename (e.g., logo.png or images/logo.png) -->
+            <img src="images/logo.jpg?v=2" alt="Website Logo" class="logo-img">
         </header>
 
         <div id="userInfo" class="seat-box"></div>
@@ -93,7 +76,7 @@
     </div>
 
     <script>
-        const API_BASE = "http://localhost:5000";
+        const API_BASE = "https://quickbitezzz-backend4.onrender.com";
         let cart = JSON.parse(localStorage.getItem("cart")) || [];
         let currentOrderId = localStorage.getItem("currentOrderId") || null;
         let trackingInterval = null;
@@ -291,11 +274,9 @@
 
             selectedPaymentMethod = paymentMethod;
 
-            // Show QR popup first
             document.getElementById("upiAmount").textContent = total;
             document.getElementById("upiModal").style.display = "flex";
 
-            // Simulate payment and auto-place order after 3 sec
             setTimeout(() => {
                 isPaid = true;
                 document.getElementById("upiModal").style.display = "none";
@@ -356,7 +337,6 @@
                 fetch(`${API_BASE}/status/${currentOrderId}`)
                 .then(res => {
                     if (res.status === 404) {
-                        // Order completed or deleted in admin panel
                         localStorage.removeItem("currentOrderId");
                         localStorage.removeItem("yourToken");
                         document.getElementById("yourToken").innerText = "--";
