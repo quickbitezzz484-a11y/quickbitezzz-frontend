@@ -88,7 +88,6 @@
             cursor: pointer;
         }
         
-        /* Token Controls CSS */
         .token-controls {
             display: flex;
             align-items: center;
@@ -315,20 +314,37 @@
     <script>
         const API_BASE = "https://quickbitezzz-backend4.onrender.com";
 
-        async function fetchSeats() {
+        // Helper function to safely fetch JSON
+        async function safeFetchJson(url, options = {}) {
             try {
-                const res = await fetch(`${API_BASE}/seats`);
-                const data = await res.json();
+                const res = await fetch(url, options);
+                if (!res.ok) {
+                    console.warn(`API call to ${url} failed with status: ${res.status}`);
+                    return null;
+                }
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    return await res.json();
+                } else {
+                    console.warn(`Response from ${url} was not JSON.`);
+                    return null;
+                }
+            } catch (err) {
+                console.error(`Network error for ${url}:`, err);
+                return null;
+            }
+        }
+
+        async function fetchSeats() {
+            const data = await safeFetchJson(`${API_BASE}/seats`);
+            if (data) {
                 document.getElementById("seatDisplay").innerText = `🪑 Available Seats: ${data.available_seats} / ${data.total_seats}`;
-                
                 if (!document.getElementById("availSeatInput").value) {
                     document.getElementById("availSeatInput").value = data.available_seats;
                 }
                 if (!document.getElementById("totalSeatInput").value) {
                     document.getElementById("totalSeatInput").value = data.total_seats;
                 }
-            } catch (err) {
-                console.error("Error fetching seats:", err);
             }
         }
 
@@ -336,36 +352,28 @@
             const availSeats = document.getElementById("availSeatInput").value;
             const totalSeats = document.getElementById("totalSeatInput").value;
             
-            try {
-                await fetch(`${API_BASE}/seats`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        available_seats: parseInt(availSeats),
-                        total_seats: parseInt(totalSeats)
-                    })
-                });
+            const res = await safeFetchJson(`${API_BASE}/seats`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    available_seats: parseInt(availSeats),
+                    total_seats: parseInt(totalSeats)
+                })
+            });
+            if (res) {
                 alert("Seats updated successfully!");
                 fetchSeats();
-            } catch (err) {
-                console.error("Error updating seats:", err);
             }
         }
 
-        /* Token Functions */
         async function fetchToken() {
-            try {
-                const res = await fetch(`${API_BASE}/current-token`);
-                const data = await res.json();
+            const data = await safeFetchJson(`${API_BASE}/current-token`);
+            if (data) {
                 const currentToken = data.current_token;
-
                 document.getElementById("tokenDisplay").innerText = `🎫 Now Serving Token: #${currentToken}`;
-                
                 if (!document.getElementById("currentTokenInput").value) {
                     document.getElementById("currentTokenInput").value = currentToken;
                 }
-            } catch (err) {
-                console.error("Error fetching token:", err);
             }
         }
 
@@ -373,132 +381,106 @@
             const tokenVal = parseInt(document.getElementById("currentTokenInput").value);
             if (isNaN(tokenVal)) return alert("Please enter a valid token number");
 
-            try {
-                await fetch(`${API_BASE}/admin/set-token`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: tokenVal })
-                });
+            const res = await safeFetchJson(`${API_BASE}/admin/set-token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: tokenVal })
+            });
+            if (res) {
                 alert("Token updated successfully!");
                 fetchToken();
-            } catch (err) {
-                console.error("Error updating token:", err);
-                alert("Failed to update token");
             }
         }
 
         async function incrementToken() {
-            try {
-                await fetch(`${API_BASE}/admin/next-token`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                fetchToken();
-            } catch (err) {
-                console.error("Error incrementing token:", err);
-            }
+            await safeFetchJson(`${API_BASE}/admin/next-token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            fetchToken();
         }
 
         async function fetchOrders() {
-            try {
-                const res = await fetch(`${API_BASE}/admin/orders`);
-                const orders = await res.json();
-                
-                const tableBody = document.getElementById("ordersTable");
-                tableBody.innerHTML = "";
+            const orders = await safeFetchJson(`${API_BASE}/admin/orders`);
+            const tableBody = document.getElementById("ordersTable");
 
-                let currentlyPreparing = null;
+            if (!orders || !Array.isArray(orders) || orders.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="9" class="no-orders">No active orders</td></tr>`;
+                document.getElementById("nowPreparingToken").innerText = "None";
+                return;
+            }
 
-                if (!Array.isArray(orders) || orders.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="9" class="no-orders">No active orders</td></tr>`;
-                    document.getElementById("nowPreparingToken").innerText = "None";
-                    return;
+            tableBody.innerHTML = "";
+            let currentlyPreparing = null;
+
+            orders.forEach(order => {
+                let statusStr = order.status || "Preparing Your Order";
+                if (statusStr === "Preparing Your Order") {
+                    currentlyPreparing = order;
                 }
 
-                orders.forEach(order => {
-                    let statusStr = order.status || "Preparing Your Order";
-                    if (statusStr === "Preparing Your Order") {
-                        currentlyPreparing = order;
-                    }
+                const row = document.createElement("tr");
 
-                    const row = document.createElement("tr");
-
-                    let rawItems = order.items || order.item;
-                    let itemsSummary = "N/A";
-                    if (Array.isArray(rawItems)) {
-                        itemsSummary = rawItems.map(i => `${i.name} x ${i.quantity}`).join(", ");
-                    } else if (typeof rawItems === 'string') {
-                        itemsSummary = rawItems;
-                    }
-
-                    let studentInfo = `${order.student_name || 'N/A'}<br><small style="color:#666;">(${order.roll_no || 'N/A'})</small>`;
-                    let statusClass = statusStr.toLowerCase().includes("ready") ? "status-done" : "status-preparing";
-
-                    row.innerHTML = `
-                        <td><strong>#${order.order_id ?? 'N/A'}</strong></td>
-                        <td><span class="token-badge">Token #${order.token_number ?? 'N/A'}</span></td>
-                        <td>${studentInfo}</td>
-                        <td>${itemsSummary}</td>
-                        <td><strong>₹${order.total_amount ?? 0}</strong></td>
-                        <td>${order.payment_method || 'UPI'}</td>
-                        <td><span class="paid-tag">${order.payment_status || 'Paid'}</span></td>
-                        <td><span class="status-tag ${statusClass}">${statusStr}</span></td>
-                        <td>
-                            <button class="btn-status btn-preparing" onclick="updateOrderStatus('${order.order_id}', 'Preparing Your Order')">Preparing</button>
-                            <button class="btn-status btn-ready" onclick="updateOrderStatus('${order.order_id}', 'Your Order is Ready')">Ready</button>
-                            <button class="btn-delete" onclick="deleteOrder('${order.order_id}')">❌</button>
-                        </td>
-                    `;
-                    tableBody.appendChild(row);
-                });
-
-                if (currentlyPreparing) {
-                    document.getElementById("nowPreparingToken").innerText = `Order #${currentlyPreparing.order_id} (Token #${currentlyPreparing.token_number})`;
-                } else {
-                    document.getElementById("nowPreparingToken").innerText = "None";
+                let rawItems = order.items || order.item;
+                let itemsSummary = "N/A";
+                if (Array.isArray(rawItems)) {
+                    itemsSummary = rawItems.map(i => `${i.name} x ${i.quantity}`).join(", ");
+                } else if (typeof rawItems === 'string') {
+                    itemsSummary = rawItems;
                 }
 
-            } catch (err) {
-                console.error("Error fetching orders:", err);
+                let studentInfo = `${order.student_name || 'N/A'}<br><small style="color:#666;">(${order.roll_no || 'N/A'})</small>`;
+                let statusClass = statusStr.toLowerCase().includes("ready") ? "status-done" : "status-preparing";
+
+                row.innerHTML = `
+                    <td><strong>#${order.order_id ?? 'N/A'}</strong></td>
+                    <td><span class="token-badge">Token #${order.token_number ?? 'N/A'}</span></td>
+                    <td>${studentInfo}</td>
+                    <td>${itemsSummary}</td>
+                    <td><strong>₹${order.total_amount ?? 0}</strong></td>
+                    <td>${order.payment_method || 'UPI'}</td>
+                    <td><span class="paid-tag">${order.payment_status || 'Paid'}</span></td>
+                    <td><span class="status-tag ${statusClass}">${statusStr}</span></td>
+                    <td>
+                        <button class="btn-status btn-preparing" onclick="updateOrderStatus('${order.order_id}', 'Preparing Your Order')">Preparing</button>
+                        <button class="btn-status btn-ready" onclick="updateOrderStatus('${order.order_id}', 'Your Order is Ready')">Ready</button>
+                        <button class="btn-delete" onclick="deleteOrder('${order.order_id}')">❌</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            if (currentlyPreparing) {
+                document.getElementById("nowPreparingToken").innerText = `Order #${currentlyPreparing.order_id} (Token #${currentlyPreparing.token_number})`;
+            } else {
+                document.getElementById("nowPreparingToken").innerText = "None";
             }
         }
 
         async function updateOrderStatus(orderId, newStatus) {
-            try {
-                const res = await fetch(`${API_BASE}/admin/update-status/${orderId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: newStatus })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    fetchOrders();
-                }
-            } catch (err) {
-                console.error("Error updating status:", err);
+            const res = await safeFetchJson(`${API_BASE}/admin/update-status/${orderId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (res) {
+                fetchOrders();
             }
         }
 
         async function deleteOrder(orderId) {
             if (!confirm(`Are you sure you want to clear Order #${orderId}?`)) return;
 
-            try {
-                const res = await fetch(`${API_BASE}/admin/delete-order/${orderId}`, {
-                    method: "DELETE",
-                    headers: { "Content-Type": "application/json" }
-                });
+            const res = await safeFetchJson(`${API_BASE}/admin/delete-order/${orderId}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" }
+            });
 
-                const data = await res.json();
-
-                if (res.ok) {
-                    fetchOrders();
-                    fetchSeats();
-                } else {
-                    alert("Failed to delete order: " + (data.message || "Order not found"));
-                }
-            } catch (error) {
-                console.error("Delete order error:", error);
-                alert("Error deleting order.");
+            if (res) {
+                fetchOrders();
+                fetchSeats();
+            } else {
+                alert("Failed to delete order.");
             }
         }
 
