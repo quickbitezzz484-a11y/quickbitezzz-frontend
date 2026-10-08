@@ -17,12 +17,12 @@ body {
     margin: 20px auto;
 }
 
-.logo {
-    width :300px;
-    height: auto;
-    margin-top: 10px;
+.logo-img {
+    max-width: 250px; /* Adjust this width to fit your header (e.g., 180px - 250px) */
+    height: auto;     /* Maintains image aspect ratio without stretching */
+    display: block;
+    margin: 0 auto;   /* Centers the logo */
 }
-
 .header {
     position: relative;
 }
