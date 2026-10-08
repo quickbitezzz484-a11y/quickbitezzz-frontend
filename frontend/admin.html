@@ -313,7 +313,6 @@
     </div>
 
     <script>
-        // Updated API base to live Render backend
         const API_BASE = "https://quickbitezzz-backend4.onrender.com";
 
         async function fetchSeats() {
@@ -375,10 +374,10 @@
             if (isNaN(tokenVal)) return alert("Please enter a valid token number");
 
             try {
-                await fetch(`${API_BASE}/admin/update-token`, {
+                await fetch(`${API_BASE}/admin/set-token`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ current_token: tokenVal })
+                    body: JSON.stringify({ token: tokenVal })
                 });
                 alert("Token updated successfully!");
                 fetchToken();
@@ -389,12 +388,15 @@
         }
 
         async function incrementToken() {
-            const currentText = document.getElementById("tokenDisplay").innerText;
-            const currentToken = parseInt(currentText.replace(/[^0-9]/g, '')) || 0;
-            const nextToken = currentToken + 1;
-            
-            document.getElementById("currentTokenInput").value = nextToken;
-            updateToken();
+            try {
+                await fetch(`${API_BASE}/admin/next-token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                fetchToken();
+            } catch (err) {
+                console.error("Error incrementing token:", err);
+            }
         }
 
         async function fetchOrders() {
@@ -421,11 +423,12 @@
 
                     const row = document.createElement("tr");
 
+                    let rawItems = order.items || order.item;
                     let itemsSummary = "N/A";
-                    if (Array.isArray(order.items)) {
-                        itemsSummary = order.items.map(i => `${i.name} x ${i.quantity}`).join(", ");
-                    } else if (typeof order.items === 'string') {
-                        itemsSummary = order.items;
+                    if (Array.isArray(rawItems)) {
+                        itemsSummary = rawItems.map(i => `${i.name} x ${i.quantity}`).join(", ");
+                    } else if (typeof rawItems === 'string') {
+                        itemsSummary = rawItems;
                     }
 
                     let studentInfo = `${order.student_name || 'N/A'}<br><small style="color:#666;">(${order.roll_no || 'N/A'})</small>`;
@@ -441,9 +444,9 @@
                         <td><span class="paid-tag">${order.payment_status || 'Paid'}</span></td>
                         <td><span class="status-tag ${statusClass}">${statusStr}</span></td>
                         <td>
-                            <button class="btn-status btn-preparing" onclick="updateOrderStatus(${order.order_id}, 'Preparing Your Order')">Preparing</button>
-                            <button class="btn-status btn-ready" onclick="updateOrderStatus(${order.order_id}, 'Your Order is Ready')">Ready</button>
-                            <button class="btn-delete" onclick="deleteOrder(${order.order_id})">❌</button>
+                            <button class="btn-status btn-preparing" onclick="updateOrderStatus('${order.order_id}', 'Preparing Your Order')">Preparing</button>
+                            <button class="btn-status btn-ready" onclick="updateOrderStatus('${order.order_id}', 'Your Order is Ready')">Ready</button>
+                            <button class="btn-delete" onclick="deleteOrder('${order.order_id}')">❌</button>
                         </td>
                     `;
                     tableBody.appendChild(row);
@@ -468,7 +471,7 @@
                     body: JSON.stringify({ status: newStatus })
                 });
                 const data = await res.json();
-                if (data.success || res.ok) {
+                if (res.ok) {
                     fetchOrders();
                 }
             } catch (err) {
@@ -481,13 +484,13 @@
 
             try {
                 const res = await fetch(`${API_BASE}/admin/delete-order/${orderId}`, {
-                    method: "POST",
+                    method: "DELETE",
                     headers: { "Content-Type": "application/json" }
                 });
 
                 const data = await res.json();
 
-                if (data.success || res.ok) {
+                if (res.ok) {
                     fetchOrders();
                     fetchSeats();
                 } else {
@@ -502,10 +505,10 @@
         fetchSeats();
         fetchToken();
         fetchOrders();
+
         setInterval(fetchSeats, 3000);
         setInterval(fetchToken, 3000);
         setInterval(fetchOrders, 3000);
-  
     </script>
 </body>
 </html>
