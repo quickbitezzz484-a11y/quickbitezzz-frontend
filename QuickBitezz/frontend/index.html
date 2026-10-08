@@ -5,20 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QuickBitezzz</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-link-btn {
+            background-color: #1a252f;
+            color: #ffffff;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        .admin-link-btn:hover {
+            background-color: #2c3e50;
+        }
+    </style>
 </head>
 <body>
 
     <div class="container">
-        <header class="header">
-            <h1>🍔 QuickBitezzz</h1>
-            <img src="images/logo.jpg" alt="Website Logo" class="logo">
-            <p>Fast campus food ordering</p>
-            <span class="left-icon">🥤</span>
-            <span class="right-icon">🍕</span>
-            <div id="userInfo" class="seat-box"></div>
-            <button onclick="logoutUser()">Logout</button>
+        <header class="header-banner">
+            <img src="images/logo.jpg" alt="Website Logo" class="logo-img">
+            <div>
+                <a href="admin.html" class="admin-link-btn">👨‍🍳 Kitchen Admin</a>
+                <button onclick="logoutUser()" class="logout-btn">Logout</button>
+            </div>
         </header>
 
+        <div id="userInfo" class="seat-box"></div>
+        
         <section class="seat-section">
             <h2>🪑 Seat Availability</h2>
             <div id="seatInfo" class="seat-box">Loading seats...</div>
@@ -31,14 +48,24 @@
                 <p>Your Token: <strong id="yourToken">--</strong></p>
             </div>
         </section>
-
+    
         <section class="menu-section">
             <h2>Menu</h2>
             <div id="menu" class="menu-grid"></div>
         </section>
 
-        <section class="cart-section">
-            <h2>🛒 Cart</h2>
+        <!-- Floating Cart Button -->
+        <div class="floating-cart-btn" onclick="toggleCart()">
+            🛒 <span id="cartCount">0</span>
+        </div>
+
+        <!-- Slide Cart Panel -->
+        <div id="cartPanel" class="cart-panel">
+            <div class="cart-header">
+                <h2>🛒 Your Cart</h2>
+                <span class="close-cart" onclick="toggleCart()">&times;</span>
+            </div>
+
             <ul id="cart" class="cart-list"></ul>
             <h3 id="totalAmount">Total: ₹0</h3>
 
@@ -48,9 +75,8 @@
                 <option value="UPI">UPI</option>
             </select>
 
-            <button id="payBtn" onclick="makePayment()">Pay Now</button>
             <button id="orderBtn" onclick="placeOrder()">Place Order</button>
-        </section>
+        </div>
 
         <div id="upiModal" class="upi-modal">
             <div class="upi-modal-content">
@@ -69,12 +95,10 @@
         </section>
     </div>
 
-  
-
     <script>
-          const API_BASE = "https://quickbitezzz-backend4.onrender.com";
-        let cart = [];
-        let currentOrderId = null;
+        const API_BASE = "http://localhost:5000";
+        let cart = JSON.parse(localStorage.getItem("cart")) || [];
+        let currentOrderId = localStorage.getItem("currentOrderId") || null;
         let trackingInterval = null;
         let menuData = [];
         let isPaid = false;
@@ -83,11 +107,16 @@
         if (!localStorage.getItem("rollNo")) {
             window.location.href = "login.html";
         }
-
+        
         document.getElementById("userInfo").innerHTML = `
             Welcome, ${localStorage.getItem("studentName") || "Student"} 
             (${localStorage.getItem("rollNo")})
         `;
+
+        const savedToken = localStorage.getItem("yourToken");
+        if (savedToken) {
+            document.getElementById("yourToken").innerText = savedToken;
+        }
 
         function logoutUser() {
             localStorage.clear();
@@ -128,6 +157,13 @@
                 if (item.name === "Burger") emoji = "🍔";
                 if (item.name === "Pizza") emoji = "🍕";
                 if (item.name === "Fries") emoji = "🍟";
+                if (item.name === "Egg Noodles") emoji = "🍜";
+                if (item.name === "Water Bottle") emoji = "🧴";
+                if (item.name === "Ice Cream") emoji = "🍦";
+                if (item.name === "Lays") emoji = "🧧";
+                if (item.name === "Dairy Milk") emoji = "🍫";
+                if (item.name === "Thumbs Up") emoji = "🥤";
+                if (item.name === "Biscuits") emoji = "🍪";
 
                 card.innerHTML = `
                     <div class="food-emoji">${emoji}</div>
@@ -165,6 +201,11 @@
             displayCart();
         }
 
+        function toggleCart() {
+            const cartPanel = document.getElementById("cartPanel");
+            cartPanel.style.display = cartPanel.style.display === "block" ? "none" : "block";
+        }
+
         function increaseQty(itemId) {
             let item = cart.find(cartItem => cartItem.id === itemId);
             if (item) {
@@ -198,8 +239,12 @@
         }
 
         function displayCart() {
+            localStorage.setItem("cart", JSON.stringify(cart));
+
             let cartList = document.getElementById("cart");
             cartList.innerHTML = "";
+
+            document.getElementById("cartCount").innerText = cart.reduce((sum, item) => sum + item.quantity, 0);
 
             if (cart.length === 0) {
                 cartList.innerHTML = "<li>Cart is empty.</li>";
@@ -229,7 +274,11 @@
             document.getElementById("totalAmount").innerHTML = `Total: ₹${getTotalAmount()}`;
         }
 
-        function makePayment() {
+        function closeUPIPopup() {
+            document.getElementById("upiModal").style.display = "none";
+        }
+
+        function placeOrder() {
             if (cart.length === 0) {
                 document.getElementById("result").innerHTML = "Cart is empty.";
                 return;
@@ -245,113 +294,85 @@
 
             selectedPaymentMethod = paymentMethod;
 
-            if (paymentMethod === "UPI") {
-                document.getElementById("upiAmount").textContent = total;
-                document.getElementById("upiModal").style.display = "flex";
+            // Show QR popup first
+            document.getElementById("upiAmount").textContent = total;
+            document.getElementById("upiModal").style.display = "flex";
 
-                setTimeout(() => {
-                    isPaid = true;
-                    document.getElementById("upiModal").style.display = "none";
+            // Simulate payment and auto-place order after 3 sec
+            setTimeout(() => {
+                isPaid = true;
+                document.getElementById("upiModal").style.display = "none";
 
-                    document.getElementById("result").innerHTML = `
-                        <p><strong>UPI Payment Successful ✅</strong></p>
-                        <p><strong>Amount Paid:</strong> ₹${total}</p>
-                        <p><strong>Payment Method:</strong> UPI</p>
-                    `;
-                }, 3000);
-            }
-        }
+                let orderItems = cart.map(item => ({
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity
+                }));
 
-        function closeUPIPopup() {
-            document.getElementById("upiModal").style.display = "none";
-        }
-
-        function placeOrder() {
-            if (!selectedPaymentMethod) {
-                document.getElementById("result").innerHTML = "Please select and confirm payment method first.";
-                return;
-            }
-
-            if (cart.length === 0) {
-                document.getElementById("result").innerHTML = "Cart is empty.";
-                return;
-            }
-
-            if (!isPaid) {
-                document.getElementById("result").innerHTML = "Please complete payment first.";
-                return;
-            }
-
-            let orderItems = cart.map(item => ({
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity
-            }));
-
-            fetch(`${API_BASE}/order`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    item: orderItems,
-                    total: getTotalAmount(),
-                    payment_status: "Paid",
-                    payment_method: selectedPaymentMethod
+                fetch(`${API_BASE}/order`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        item: orderItems,
+                        total: getTotalAmount(),
+                        payment_status: "Paid",
+                        payment_method: selectedPaymentMethod,
+                        roll_no: localStorage.getItem("rollNo") || "",
+                        student_name: localStorage.getItem("studentName") || ""
+                    })
                 })
-            })
-            .then(res => res.json())
-            .then(data => {
-                isPaid = false;
-                selectedPaymentMethod = "";
-                document.getElementById("paymentMethod").value = "";
+                .then(res => res.json())
+                .then(data => {
+                    isPaid = false;
+                    selectedPaymentMethod = "";
+                    document.getElementById("paymentMethod").value = "";
 
-                currentOrderId = data.order.order_id;
-                document.getElementById("yourToken").innerText = data.order.token_number;
+                    currentOrderId = data.order.order_id;
+                    localStorage.setItem("currentOrderId", currentOrderId);
+                    localStorage.setItem("yourToken", data.order.token_number);
+                    document.getElementById("yourToken").innerText = data.order.token_number;
 
-                let statusText = data.order.status || "Preparing";
+                    cart = [];
+                    localStorage.removeItem("cart");
+                    displayCart();
+                    loadSeats();
 
-                document.getElementById("result").innerHTML = `
-                    <p><strong>Order placed successfully</strong></p>
-                    <p><strong>Order ID:</strong> ${data.order.order_id}</p>
-                    <p><strong>Token Number:</strong> ${data.order.token_number}</p>
-                    <p><strong>Status:</strong> 
-                        <span class="status ${getStatusClass(statusText)}">${statusText}</span>
-                    </p>
-                    <p><strong>Seats Left:</strong> ${data.available_seats}</p>
-                    <p><strong>Total Paid:</strong> ₹${data.order.total_amount}</p>
-                    <p><strong>Payment Method:</strong> ${data.order.payment_method}</p>
-                    <p><strong>Payment Status:</strong> ${data.order.payment_status}</p>
-                `;
-
-                cart = [];
-                displayCart();
-                loadSeats();
-
-                if (trackingInterval) {
-                    clearInterval(trackingInterval);
-                }
-
-                trackOrder();
-            })
-            .catch(error => {
-                document.getElementById("result").innerHTML = "Error placing order.";
-                console.log(error);
-            });
+                    trackOrder();
+                })
+                .catch(error => {
+                    document.getElementById("result").innerHTML = "Error placing order.";
+                    console.log(error);
+                });
+            }, 3000);
         }
 
         function trackOrder() {
-            trackingInterval = setInterval(() => {
-                fetch(`${API_BASE}/status/${currentOrderId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.error) {
-                        document.getElementById("result").innerHTML = "Order not found.";
-                        clearInterval(trackingInterval);
-                        return;
-                    }
+            if (trackingInterval) {
+                clearInterval(trackingInterval);
+            }
 
-                    let statusText = data.status || "Unknown";
+            function fetchOrderStatus() {
+                if (!currentOrderId) return;
+
+                fetch(`${API_BASE}/status/${currentOrderId}`)
+                .then(res => {
+                    if (res.status === 404) {
+                        // Order completed or deleted in admin panel
+                        localStorage.removeItem("currentOrderId");
+                        localStorage.removeItem("yourToken");
+                        document.getElementById("yourToken").innerText = "--";
+                        document.getElementById("result").innerHTML = "No active order.";
+                        clearInterval(trackingInterval);
+                        return null;
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (!data) return;
+
+                    let statusText = data.status || "Preparing Your Order";
 
                     document.getElementById("result").innerHTML = `
                         <p><strong>Order ID:</strong> ${data.order_id ?? "N/A"}</p>
@@ -362,30 +383,37 @@
                         <p><strong>Seats Left:</strong> ${data.seats_left ?? "N/A"}</p>
                         <p><strong>Total Paid:</strong> ₹${data.total_amount ?? "N/A"}</p>
                     `;
-
-                    if (statusText === "Ochi Tini Poo") {
-                        clearInterval(trackingInterval);
-                    }
                 })
                 .catch(error => {
                     console.log("Tracking error:", error);
                 });
-            }, 5000);
+            }
+
+            fetchOrderStatus();
+            trackingInterval = setInterval(fetchOrderStatus, 3000);
         }
 
         function getStatusClass(status) {
             if (!status || typeof status !== "string") return "";
 
-            if (status.includes("Preparing")) return "status-preparing";
-            if (status.includes("Ready Avuthundhi Chill macha")) return "status-delivery";
-            if (status.includes("Ochi Tini Poo") || status.includes("ochi Tini Poo")) return "status-done";
+            let s = status.toLowerCase().trim();
+
+            if (s.includes("preparing")) return "status-preparing";
+            if (s.includes("ready") || s.includes("chi")) return "status-done";
 
             return "";
-        }
+        } 
 
         loadSeats();
         loadCurrentToken();
+
+        if (currentOrderId) {
+            trackOrder();
+        }
+
+        setInterval(loadSeats, 3000);
         setInterval(loadCurrentToken, 3000);
+        displayCart();
     </script>
 </body>
 </html>
