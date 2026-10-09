@@ -4,7 +4,7 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 
-# Full CORS configuration
+# 1. CORS Setup
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 @app.after_request
@@ -19,7 +19,7 @@ def handle_options():
     if request.method == 'OPTIONS':
         return jsonify({"status": "ok"}), 200
 
-# State
+# Application In-Memory State
 TOTAL_SEATS = 50
 occupied_seats = 0
 current_token = 1
