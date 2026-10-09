@@ -1,37 +1,19 @@
+import random
 from flask import Flask, jsonify, request
-from flask_cors import CORS
 
 app = Flask(__name__)
 
-# Enable CORS globally for all routes
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-
-# Add CORS headers to all responses (including 404/405 errors)
-@app.after_request
-def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-    return response
-
-# Global preflight handler returning 200 OK for OPTIONS
-@app.before_request
-def handle_options():
-    if request.method == 'OPTIONS':
-        return jsonify({"status": "ok"}), 200
-        
-# --- BULLETPROOF WSGI CORS MIDDLEWARE ---
-class CORSMiddleware:
-    def __init__(self, app):
-        self.app = app
+# Network-Level WSGI Middleware for 100% Preflight & CORS Compliance
+class DirectCORSMiddleware:
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
 
     def __call__(self, environ, start_response):
-        # Handle OPTIONS preflight requests globally at WSGI level
         if environ.get('REQUEST_METHOD') == 'OPTIONS':
             headers = [
                 ('Access-Control-Allow-Origin', '*'),
                 ('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'),
-                ('Access-Control-Allow-Headers', 'Content-Type, Authorization'),
+                ('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With'),
                 ('Access-Control-Max-Age', '86400'),
                 ('Content-Type', 'text/plain; charset=utf-8'),
                 ('Content-Length', '0')
@@ -39,18 +21,18 @@ class CORSMiddleware:
             start_response('200 OK', headers)
             return [b'']
 
-        def custom_start_response(status, headers, exc_info=None):
+        def cors_start_response(status, headers, exc_info=None):
             headers = list(headers)
             headers.append(('Access-Control-Allow-Origin', '*'))
             headers.append(('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'))
-            headers.append(('Access-Control-Allow-Headers', 'Content-Type, Authorization'))
+            headers.append(('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With'))
             return start_response(status, headers, exc_info)
 
-        return self.app(environ, custom_start_response)
+        return self.wsgi_app(environ, cors_start_response)
 
-app.wsgi_app = CORSMiddleware(app.wsgi_app)
+app.wsgi_app = DirectCORSMiddleware(app.wsgi_app)
 
-# In-Memory Database State
+# Application Data
 TOTAL_SEATS = 50
 occupied_seats = 0
 current_token = 1
@@ -72,10 +54,10 @@ menu_items = [
 orders = {}
 
 @app.route('/')
-def home():
-    return jsonify({"message": "QuickBitezzz Backend Active API"})
+def root():
+    return jsonify({"message": "QuickBitezzz Active Backend"})
 
-# --- SEATS ENDPOINTS ---
+# --- SEAT ROUTES ---
 @app.route('/seats', methods=['GET', 'POST', 'OPTIONS'])
 def handle_seats():
     global occupied_seats, TOTAL_SEATS
@@ -91,14 +73,13 @@ def handle_seats():
             "total_seats": TOTAL_SEATS
         })
     
-    available = max(0, TOTAL_SEATS - occupied_seats)
     return jsonify({
         "total_seats": TOTAL_SEATS,
         "occupied_seats": occupied_seats,
-        "available_seats": available
+        "available_seats": max(0, TOTAL_SEATS - occupied_seats)
     })
 
-# --- TOKEN ENDPOINTS ---
+# --- TOKEN ROUTES ---
 @app.route('/current-token', methods=['GET'])
 def get_current_token():
     return jsonify({"current_token": current_token})
@@ -116,22 +97,20 @@ def set_token():
     global current_token
     data = request.json or {}
     token_val = data.get("token") or data.get("current_token")
-    
     if token_val is not None:
         try:
             current_token = int(token_val)
             return jsonify({"message": "Token set", "current_token": current_token})
         except ValueError:
-            return jsonify({"message": "Invalid token value"}), 400
-            
+            return jsonify({"message": "Invalid token"}), 400
     return jsonify({"message": "Token value required"}), 400
 
-# --- MENU ENDPOINT ---
+# --- MENU ROUTES ---
 @app.route('/menu', methods=['GET'])
 def get_menu():
     return jsonify(menu_items)
 
-# --- ORDER ENDPOINTS ---
+# --- ORDER ROUTES ---
 @app.route('/order', methods=['POST', 'OPTIONS'])
 def place_order():
     global occupied_seats, token_counter
@@ -139,17 +118,14 @@ def place_order():
 
     order_id = f"ORD{random.randint(1000, 9999)}"
     token_counter += 1
-    assigned_token = token_counter
 
     if occupied_seats < TOTAL_SEATS:
         occupied_seats += 1
 
-    order_items = data.get("items") or data.get("item") or []
-
     new_order = {
         "order_id": order_id,
-        "token_number": assigned_token,
-        "items": order_items,
+        "token_number": token_counter,
+        "items": data.get("items") or data.get("item") or [],
         "total_amount": data.get("total", 0),
         "payment_status": data.get("payment_status", "Paid"),
         "payment_method": data.get("payment_method", "UPI"),
@@ -176,7 +152,7 @@ def get_status(order_id):
     order_info["seats_left"] = max(0, TOTAL_SEATS - occupied_seats)
     return jsonify(order_info)
 
-# --- ADMIN ENDPOINTS ---
+# --- ADMIN STATUS & DELETE ROUTES ---
 @app.route('/admin/orders', methods=['GET'])
 @app.route('/orders', methods=['GET'])
 def get_admin_orders():
