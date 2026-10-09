@@ -4,7 +4,7 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 
-# 1. CORS Setup
+# Enable CORS globally for all routes and methods
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 @app.after_request
@@ -19,7 +19,7 @@ def handle_options():
     if request.method == 'OPTIONS':
         return jsonify({"status": "ok"}), 200
 
-# Application In-Memory State
+# Global In-Memory State
 TOTAL_SEATS = 50
 occupied_seats = 0
 current_token = 1
@@ -54,7 +54,11 @@ def handle_seats():
             occupied_seats = max(0, TOTAL_SEATS - int(data['available_seats']))
         if 'total_seats' in data:
             TOTAL_SEATS = int(data['total_seats'])
-        return jsonify({"success": True, "available_seats": max(0, TOTAL_SEATS - occupied_seats), "total_seats": TOTAL_SEATS})
+        return jsonify({
+            "success": True, 
+            "available_seats": max(0, TOTAL_SEATS - occupied_seats), 
+            "total_seats": TOTAL_SEATS
+        })
     
     available = max(0, TOTAL_SEATS - occupied_seats)
     return jsonify({
