@@ -1,173 +1,168 @@
-from flask import Flask, request, jsonify
+import random
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 app = Flask(__name__)
-# Initialize CORS cleanly for all routes
+
+# Enable CORS globally for all routes, origins, and HTTP methods
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-@app.route('/admin/update-token', methods=['POST', 'OPTIONS'])
-def update_token():
-    if request.method == 'OPTIONS':
-        return jsonify({'status': 'ok'}), 200
+# Global preflight OPTIONS handling to prevent CORS blockages
+@app.before_request
+def handle_options_header():
+    if request.method == "OPTIONS":
+        response = app.make_default_options_response()
+        headers = response.headers
+        headers['Access-Control-Allow-Origin'] = '*'
+        headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        return response, 200
 
-    global current_token
-    data = request.json or {}
-    new_token = data.get("current_token")
-    if new_token is not None:
-        try:
-            current_token = int(new_token)
-            return jsonify({"success": True, "token": current_token})
-        except ValueError:
-            return jsonify({"success": False, "message": "Invalid token format"}), 400
-            
-    return jsonify({"success": True, "token": current_token})
-
-
-@app.after_request
-def after_request(response):
-    # Set headers directly instead of add() to prevent duplicate CORS header values
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
-    response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
-    return response
-
-# In-memory storage
-seats = {"available_seats": 20, "total_seats": 100}
+# Application In-Memory State
+TOTAL_SEATS = 50
+occupied_seats = 0
+current_token = 1
 token_counter = 100
-current_token = 100
-orders = []
 
-menu_data = [
-    {"id": 1, "name": "Burger", "price": 120},
-    {"id": 2, "name": "Pizza", "price": 250},
-    {"id": 3, "name": "Fries", "price": 80},
-    {"id": 4, "name": "Egg Noodles", "price": 100},
+menu_items = [
+    {"id": 1, "name": "Burger", "price": 80},
+    {"id": 2, "name": "Pizza", "price": 150},
+    {"id": 3, "name": "Fries", "price": 60},
+    {"id": 4, "name": "Egg Noodles", "price": 90},
     {"id": 5, "name": "Water Bottle", "price": 20},
-    {"id": 6, "name": "Ice Cream", "price": 50},
+    {"id": 6, "name": "Ice Cream", "price": 40},
     {"id": 7, "name": "Lays", "price": 20},
-    {"id": 8, "name": "Dairy Milk", "price": 40},
+    {"id": 8, "name": "Dairy Milk", "price": 50},
     {"id": 9, "name": "Thumbs Up", "price": 30},
     {"id": 10, "name": "Biscuits", "price": 25}
 ]
 
+orders = {}
+
 @app.route('/')
 def home():
-    return jsonify({"status": "QuickBitezzz Backend Running"})
+    return jsonify({"message": "QuickBitezzz Backend Active API"})
 
-@app.route('/menu', methods=['GET', 'OPTIONS'])
-def get_menu():
-    if request.method == 'OPTIONS':
-        return jsonify({'status': 'ok'}), 200
-    return jsonify(menu_data)
-
+# --- SEATS ENDPOINTS ---
 @app.route('/seats', methods=['GET', 'POST', 'OPTIONS'])
-def manage_seats():
-    if request.method == 'OPTIONS':
-        return jsonify({'status': 'ok'}), 200
-
-    global seats
+def handle_seats():
+    global occupied_seats, TOTAL_SEATS
     if request.method == 'POST':
-        data = request.get_json() or {}
-        new_avail = data.get('available_seats')
-        new_total = data.get('total_seats')
-        
-        if new_avail is not None:
-            seats['available_seats'] = int(new_avail)
-        if new_total is not None:
-            seats['total_seats'] = int(new_total)
-            
-        return jsonify(seats)
-    return jsonify(seats)
+        data = request.json or {}
+        if 'available_seats' in data:
+            occupied_seats = max(0, TOTAL_SEATS - int(data['available_seats']))
+        if 'total_seats' in data:
+            TOTAL_SEATS = int(data['total_seats'])
+        return jsonify({"success": True, "available_seats": max(0, TOTAL_SEATS - occupied_seats), "total_seats": TOTAL_SEATS})
+    
+    available = max(0, TOTAL_SEATS - occupied_seats)
+    return jsonify({
+        "total_seats": TOTAL_SEATS,
+        "occupied_seats": occupied_seats,
+        "available_seats": available
+    })
 
-@app.route('/current-token', methods=['GET', 'OPTIONS'])
+# --- TOKEN ENDPOINTS ---
+@app.route('/current-token', methods=['GET'])
 def get_current_token():
-    if request.method == 'OPTIONS':
-        return jsonify({'status': 'ok'}), 200
     return jsonify({"current_token": current_token})
 
+@app.route('/next-token', methods=['POST', 'OPTIONS'])
+@app.route('/admin/next-token', methods=['POST', 'OPTIONS'])
+def next_token():
+    global current_token
+    current_token += 1
+    return jsonify({"message": "Token incremented", "current_token": current_token})
+
+@app.route('/set-token', methods=['POST', 'OPTIONS'])
+@app.route('/admin/set-token', methods=['POST', 'OPTIONS'])
+def set_token():
+    global current_token
+    data = request.json or {}
+    token_val = data.get("token") or data.get("current_token")
+    
+    if token_val is not None:
+        try:
+            current_token = int(token_val)
+            return jsonify({"message": "Token set", "current_token": current_token})
+        except ValueError:
+            return jsonify({"message": "Invalid token value"}), 400
+            
+    return jsonify({"message": "Token value required"}), 400
+
+# --- MENU ENDPOINT ---
+@app.route('/menu', methods=['GET'])
+def get_menu():
+    return jsonify(menu_items)
+
+# --- ORDER ENDPOINTS ---
 @app.route('/order', methods=['POST', 'OPTIONS'])
 def place_order():
-    if request.method == 'OPTIONS':
-        return jsonify({'status': 'ok'}), 200
+    global occupied_seats, token_counter
+    data = request.json or {}
 
-    global token_counter, seats, orders
-    data = request.get_json() or {}
-    
+    order_id = f"ORD{random.randint(1000, 9999)}"
     token_counter += 1
-    new_order_id = len(orders) + 1
-    
-    items = data.get("items") or data.get("item") or []
-    total = data.get("total", 0)
-    
-    order = {
-        "order_id": new_order_id,
-        "token_number": token_counter,
-        "items": items,
-        "total_amount": total,
+    assigned_token = token_counter
+
+    if occupied_seats < TOTAL_SEATS:
+        occupied_seats += 1
+
+    order_items = data.get("items") or data.get("item") or []
+
+    new_order = {
+        "order_id": order_id,
+        "token_number": assigned_token,
+        "items": order_items,
+        "total_amount": data.get("total", 0),
         "payment_status": data.get("payment_status", "Paid"),
         "payment_method": data.get("payment_method", "UPI"),
-        "status": "Preparing Your Order"
+        "roll_no": data.get("roll_no", ""),
+        "student_name": data.get("student_name", ""),
+        "status": "Preparing Your Order",
+        "seats_left": max(0, TOTAL_SEATS - occupied_seats)
     }
-    
-    orders.append(order)
-    
-    if seats["available_seats"] > 0:
-        seats["available_seats"] -= 1
-        
-    return jsonify({"message": "Order placed successfully", "order": order})
 
-@app.route('/status/<int:order_id>', methods=['GET', 'OPTIONS'])
-def get_order_status(order_id):
-    if request.method == 'OPTIONS':
-        return jsonify({'status': 'ok'}), 200
+    orders[order_id] = new_order
+    return jsonify({"message": "Order placed successfully", "order": new_order}), 201
 
-    order = next((o for o in orders if int(o.get("order_id", 0)) == int(order_id)), None)
-    if order:
-        return jsonify({
-            "order_id": order["order_id"],
-            "token_number": order["token_number"],
-            "status": order["status"],
-            "seats_left": seats["available_seats"],
-            "total_amount": order["total_amount"]
-        })
+@app.route('/status/<order_id>', methods=['GET'])
+def get_status(order_id):
+    if order_id not in orders:
+        return jsonify({"message": "Order not found"}), 404
+    
+    order_info = orders[order_id]
+    order_info["seats_left"] = max(0, TOTAL_SEATS - occupied_seats)
+    return jsonify(order_info)
+
+# --- ADMIN ENDPOINTS ---
+@app.route('/orders', methods=['GET'])
+@app.route('/admin/orders', methods=['GET'])
+def get_admin_orders():
+    return jsonify(list(orders.values()))
+
+@app.route('/update-status/<order_id>', methods=['POST', 'PUT', 'OPTIONS'])
+@app.route('/admin/update-status/<order_id>', methods=['POST', 'PUT', 'OPTIONS'])
+def update_status(order_id):
+    global occupied_seats
+    data = request.json or {}
+    new_status = data.get("status")
+
+    if order_id in orders:
+        orders[order_id]["status"] = new_status
+        if new_status and "ready" in new_status.lower() and occupied_seats > 0:
+            occupied_seats -= 1
+        return jsonify({"message": "Status updated", "order": orders[order_id]})
+    
     return jsonify({"message": "Order not found"}), 404
 
-@app.route('/admin/orders', methods=['GET', 'OPTIONS'])
-def get_admin_orders():
-    if request.method == 'OPTIONS':
-        return jsonify({'status': 'ok'}), 200
-    return jsonify(orders)
-
-@app.route('/admin/update-status/<int:order_id>', methods=['POST', 'PUT', 'OPTIONS'])
-def update_order_status(order_id):
-    if request.method == 'OPTIONS':
-        return jsonify({'status': 'ok'}), 200
-
-    global current_token
-    data = request.get_json() or {}
-    new_status = data.get("status")
-    
-    order = next((o for o in orders if int(o.get("order_id", 0)) == int(order_id)), None)
-    if order:
-        order["status"] = new_status
-        if new_status in ["Your Order is Ready", "Preparing Your Order"]:
-            current_token = order["token_number"]
-        return jsonify({"success": True, "order": order})
-    return jsonify({"success": False, "message": "Order not found"}), 404
-
-@app.route('/admin/delete-order/<int:order_id>', methods=['POST', 'DELETE', 'OPTIONS'])
-def admin_delete_order(order_id):
-    if request.method == 'OPTIONS':
-        return jsonify({'status': 'ok'}), 200
-
-    global orders
-    initial_count = len(orders)
-    orders = [o for o in orders if int(o.get("order_id", 0)) != int(order_id)]
-    
-    if len(orders) < initial_count:
-        return jsonify({"success": True, "message": "Order removed successfully"}), 200
-    else:
-        return jsonify({"success": False, "message": "Order not found"}), 404
+@app.route('/delete-order/<order_id>', methods=['DELETE', 'POST', 'OPTIONS'])
+@app.route('/admin/delete-order/<order_id>', methods=['DELETE', 'POST', 'OPTIONS'])
+def delete_order(order_id):
+    if order_id in orders:
+        del orders[order_id]
+        return jsonify({"message": "Order deleted"})
+    return jsonify({"message": "Order not found"}), 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
