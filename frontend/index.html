@@ -10,7 +10,7 @@
 
     <div class="container">
         <header class="header-banner">
-            <img src="images/App.jpg?v=5" alt="Website Logo" class="logo-img">
+            <img src="images/logo.jpg?v=2" alt="Website Logo" class="logo-img">
         </header>
 
         <div id="userInfo" class="seat-box"></div>
@@ -57,6 +57,7 @@
             <button id="orderBtn" onclick="placeOrder()">Place Order</button>
         </div>
 
+        <!-- UPI Payment Modal -->
         <div id="upiModal" class="upi-modal">
             <div class="upi-modal-content">
                 <span class="close-btn" onclick="closeUPIPopup()">&times;</span>
@@ -65,6 +66,19 @@
                 <p><strong>Amount:</strong> ₹<span id="upiAmount">0</span></p>
                 <p>Processing payment...</p>
                 <p>Scan & pay... Verifying payment ⏳</p>
+            </div>
+        </div>
+
+        <!-- Order Success Modal -->
+        <div id="successModal" class="upi-modal" style="display: none;">
+            <div class="upi-modal-content" style="text-align: center;">
+                <h2 style="color: #2e7d32;">🎉 Order Placed Successfully!</h2>
+                <p style="font-size: 16px;">Your payment has been verified.</p>
+                <div style="background-color: #e8f5e9; padding: 12px; border-radius: 8px; margin: 15px 0;">
+                    <p style="margin: 5px 0;"><strong>Order ID:</strong> <span id="successOrderId">--</span></p>
+                    <p style="margin: 5px 0; font-size: 18px; color: #1b5e20;"><strong>Token Number: #<span id="successTokenNum">--</span></strong></p>
+                </div>
+                <button onclick="closeSuccessModal()" style="background-color: #2e7d32; color: white; padding: 10px 25px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px;">OK</button>
             </div>
         </div>
 
@@ -257,6 +271,10 @@
             document.getElementById("upiModal").style.display = "none";
         }
 
+        function closeSuccessModal() {
+            document.getElementById("successModal").style.display = "none";
+        }
+
         function placeOrder() {
             if (cart.length === 0) {
                 document.getElementById("result").innerHTML = "Cart is empty.";
@@ -310,6 +328,14 @@
                     localStorage.setItem("currentOrderId", currentOrderId);
                     localStorage.setItem("yourToken", data.order.token_number);
                     document.getElementById("yourToken").innerText = data.order.token_number;
+
+                    // Close cart panel if open
+                    document.getElementById("cartPanel").style.display = "none";
+
+                    // Populate and trigger Success Modal
+                    document.getElementById("successOrderId").innerText = data.order.order_id;
+                    document.getElementById("successTokenNum").innerText = data.order.token_number;
+                    document.getElementById("successModal").style.display = "flex";
 
                     cart = [];
                     localStorage.removeItem("cart");
