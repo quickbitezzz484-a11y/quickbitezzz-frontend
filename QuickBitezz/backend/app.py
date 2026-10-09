@@ -3,11 +3,10 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-# --- NETWORK-LEVEL WSGI CORS MIDDLEWARE ---
-# Guarantees 200 OK for every preflight OPTIONS request before Flask routing
-class CORSMiddleware:
-    def __init__(self, wsgi_app):
-        self.wsgi_app = wsgi_app
+# WSGI Middleware intercepting all OPTIONS requests at network entry
+class ForceCORSMiddleware:
+    def __init__(self, app):
+        self.app = app
 
     def __call__(self, environ, start_response):
         if environ.get('REQUEST_METHOD') == 'OPTIONS':
@@ -29,11 +28,10 @@ class CORSMiddleware:
             headers.append(('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With'))
             return start_response(status, headers, exc_info)
 
-        return self.wsgi_app(environ, custom_start_response)
+        return self.app(environ, custom_start_response)
 
-app.wsgi_app = CORSMiddleware(app.wsgi_app)
+app.wsgi_app = ForceCORSMiddleware(app.wsgi_app)
 
-# In-Memory Database
 TOTAL_SEATS = 50
 occupied_seats = 0
 current_token = 1
@@ -58,8 +56,9 @@ orders = {}
 def home():
     return jsonify({"message": "QuickBitezzz Backend Active API"})
 
-# --- SEATS ROUTES ---
+# --- SEATS ENDPOINTS ---
 @app.route('/seats', methods=['GET', 'POST', 'OPTIONS'])
+@app.route('/api/seats', methods=['GET', 'POST', 'OPTIONS'])
 def handle_seats():
     global occupied_seats, TOTAL_SEATS
     if request.method == 'POST':
@@ -80,13 +79,15 @@ def handle_seats():
         "available_seats": max(0, TOTAL_SEATS - occupied_seats)
     })
 
-# --- TOKEN ROUTES ---
+# --- TOKEN ENDPOINTS ---
 @app.route('/current-token', methods=['GET'])
+@app.route('/api/current-token', methods=['GET'])
 def get_current_token():
     return jsonify({"current_token": current_token})
 
 @app.route('/admin/next-token', methods=['GET', 'POST', 'OPTIONS'])
 @app.route('/next-token', methods=['GET', 'POST', 'OPTIONS'])
+@app.route('/api/next-token', methods=['GET', 'POST', 'OPTIONS'])
 def next_token():
     global current_token
     current_token += 1
@@ -94,6 +95,7 @@ def next_token():
 
 @app.route('/admin/set-token', methods=['GET', 'POST', 'OPTIONS'])
 @app.route('/set-token', methods=['GET', 'POST', 'OPTIONS'])
+@app.route('/api/set-token', methods=['GET', 'POST', 'OPTIONS'])
 def set_token():
     global current_token
     data = request.json or {}
@@ -106,13 +108,15 @@ def set_token():
             return jsonify({"message": "Invalid token"}), 400
     return jsonify({"message": "Token value required"}), 400
 
-# --- MENU ROUTES ---
+# --- MENU ROUTE ---
 @app.route('/menu', methods=['GET'])
+@app.route('/api/menu', methods=['GET'])
 def get_menu():
     return jsonify(menu_items)
 
 # --- ORDER ROUTES ---
 @app.route('/order', methods=['POST', 'OPTIONS'])
+@app.route('/api/order', methods=['POST', 'OPTIONS'])
 def place_order():
     global occupied_seats, token_counter
     data = request.json or {}
@@ -140,6 +144,7 @@ def place_order():
     return jsonify({"message": "Order placed successfully", "order": new_order}), 201
 
 @app.route('/status/<order_id>', methods=['GET'])
+@app.route('/api/status/<order_id>', methods=['GET'])
 def get_status(order_id):
     order_info = None
     for k, v in orders.items():
@@ -153,14 +158,16 @@ def get_status(order_id):
     order_info["seats_left"] = max(0, TOTAL_SEATS - occupied_seats)
     return jsonify(order_info)
 
-# --- ADMIN ROUTES (Handles string & integer IDs, both / and /admin/ namespaces) ---
+# --- ADMIN STATUS & DELETE ENDPOINTS ---
 @app.route('/admin/orders', methods=['GET'])
 @app.route('/orders', methods=['GET'])
+@app.route('/api/orders', methods=['GET'])
 def get_admin_orders():
     return jsonify(list(orders.values()))
 
 @app.route('/admin/update-status/<order_id>', methods=['GET', 'POST', 'PUT', 'OPTIONS'])
 @app.route('/update-status/<order_id>', methods=['GET', 'POST', 'PUT', 'OPTIONS'])
+@app.route('/api/update-status/<order_id>', methods=['GET', 'POST', 'PUT', 'OPTIONS'])
 def update_status(order_id):
     global occupied_seats
     data = request.json or {}
@@ -182,6 +189,7 @@ def update_status(order_id):
 
 @app.route('/admin/delete-order/<order_id>', methods=['GET', 'POST', 'DELETE', 'OPTIONS'])
 @app.route('/delete-order/<order_id>', methods=['GET', 'POST', 'DELETE', 'OPTIONS'])
+@app.route('/api/delete-order/<order_id>', methods=['GET', 'POST', 'DELETE', 'OPTIONS'])
 def delete_order(order_id):
     global orders
     matched_key = None
