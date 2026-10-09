@@ -4,19 +4,22 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 
-# Enable CORS globally for all routes, origins, and HTTP methods
-CORS(app, resources={r"/*": {"origins": "*"}})
+# Enable CORS globally for all routes and origins
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
-# Global preflight OPTIONS handling to prevent CORS blockages
+# Add CORS headers to every response explicitly
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    return response
+
+# Handle preflight OPTIONS requests globally
 @app.before_request
-def handle_options_header():
-    if request.method == "OPTIONS":
-        response = app.make_default_options_response()
-        headers = response.headers
-        headers['Access-Control-Allow-Origin'] = '*'
-        headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-        headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-        return response, 200
+def handle_options():
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "ok"}), 200
 
 # Application In-Memory State
 TOTAL_SEATS = 50
@@ -145,24 +148,44 @@ def get_admin_orders():
 @app.route('/admin/update-status/<order_id>', methods=['POST', 'PUT', 'OPTIONS'])
 def update_status(order_id):
     global occupied_seats
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "ok"}), 200
+
     data = request.json or {}
     new_status = data.get("status")
 
-    if order_id in orders:
-        orders[order_id]["status"] = new_status
+    # Match exact string ID or search values
+    matched_key = None
+    for k in orders.keys():
+        if str(k) == str(order_id):
+            matched_key = k
+            break
+
+    if matched_key:
+        orders[matched_key]["status"] = new_status
         if new_status and "ready" in new_status.lower() and occupied_seats > 0:
             occupied_seats -= 1
-        return jsonify({"message": "Status updated", "order": orders[order_id]})
+        return jsonify({"message": "Status updated", "order": orders[matched_key]})
     
     return jsonify({"message": "Order not found"}), 404
 
 @app.route('/delete-order/<order_id>', methods=['DELETE', 'POST', 'OPTIONS'])
 @app.route('/admin/delete-order/<order_id>', methods=['DELETE', 'POST', 'OPTIONS'])
 def delete_order(order_id):
-    if order_id in orders:
-        del orders[order_id]
+    global orders
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "ok"}), 200
+
+    matched_key = None
+    for k in orders.keys():
+        if str(k) == str(order_id):
+            matched_key = k
+            break
+
+    if matched_key:
+        del orders[matched_key]
         return jsonify({"message": "Order deleted"})
     return jsonify({"message": "Order not found"}), 404
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000)
