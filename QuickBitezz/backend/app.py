@@ -4,7 +4,7 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 
-# Enable CORS globally
+# Full CORS configuration for all routes and preflight checks
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 @app.after_request
@@ -14,12 +14,13 @@ def add_cors_headers(response):
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     return response
 
+# Global OPTIONS preflight handler
 @app.before_request
 def handle_options():
     if request.method == 'OPTIONS':
         return jsonify({"status": "ok"}), 200
 
-# Application State
+# Application In-Memory State
 TOTAL_SEATS = 50
 occupied_seats = 0
 current_token = 1
@@ -68,14 +69,12 @@ def handle_seats():
 def get_current_token():
     return jsonify({"current_token": current_token})
 
-@app.route('/next-token', methods=['POST', 'OPTIONS'])
 @app.route('/admin/next-token', methods=['POST', 'OPTIONS'])
 def next_token():
     global current_token
     current_token += 1
     return jsonify({"message": "Token incremented", "current_token": current_token})
 
-@app.route('/set-token', methods=['POST', 'OPTIONS'])
 @app.route('/admin/set-token', methods=['POST', 'OPTIONS'])
 def set_token():
     global current_token
@@ -142,12 +141,10 @@ def get_status(order_id):
     return jsonify(order_info)
 
 # --- ADMIN ENDPOINTS ---
-@app.route('/orders', methods=['GET'])
 @app.route('/admin/orders', methods=['GET'])
 def get_admin_orders():
     return jsonify(list(orders.values()))
 
-@app.route('/update-status/<order_id>', methods=['POST', 'PUT', 'OPTIONS'])
 @app.route('/admin/update-status/<order_id>', methods=['POST', 'PUT', 'OPTIONS'])
 def update_status(order_id):
     global occupied_seats
@@ -171,7 +168,6 @@ def update_status(order_id):
     
     return jsonify({"message": "Order not found"}), 404
 
-@app.route('/delete-order/<order_id>', methods=['DELETE', 'POST', 'OPTIONS'])
 @app.route('/admin/delete-order/<order_id>', methods=['DELETE', 'POST', 'OPTIONS'])
 def delete_order(order_id):
     global orders
