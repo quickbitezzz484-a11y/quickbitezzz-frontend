@@ -4,10 +4,9 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 
-# Enable CORS globally for all routes and origins
+# Enable CORS globally
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
-# Add CORS headers to every response explicitly
 @app.after_request
 def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
@@ -15,13 +14,12 @@ def add_cors_headers(response):
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     return response
 
-# Handle preflight OPTIONS requests globally
 @app.before_request
 def handle_options():
     if request.method == 'OPTIONS':
         return jsonify({"status": "ok"}), 200
 
-# Application In-Memory State
+# Application State
 TOTAL_SEATS = 50
 occupied_seats = 0
 current_token = 1
@@ -131,10 +129,15 @@ def place_order():
 
 @app.route('/status/<order_id>', methods=['GET'])
 def get_status(order_id):
-    if order_id not in orders:
+    order_info = None
+    for k, v in orders.items():
+        if str(k) == str(order_id):
+            order_info = v
+            break
+            
+    if not order_info:
         return jsonify({"message": "Order not found"}), 404
     
-    order_info = orders[order_id]
     order_info["seats_left"] = max(0, TOTAL_SEATS - occupied_seats)
     return jsonify(order_info)
 
@@ -154,7 +157,6 @@ def update_status(order_id):
     data = request.json or {}
     new_status = data.get("status")
 
-    # Match exact string ID or search values
     matched_key = None
     for k in orders.keys():
         if str(k) == str(order_id):
