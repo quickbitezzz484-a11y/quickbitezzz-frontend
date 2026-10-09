@@ -3,8 +3,9 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-# Network-Level WSGI Middleware for 100% Preflight & CORS Compliance
-class DirectCORSMiddleware:
+# --- NETWORK-LEVEL WSGI CORS MIDDLEWARE ---
+# Guarantees 200 OK for every preflight OPTIONS request before Flask routing
+class CORSMiddleware:
     def __init__(self, wsgi_app):
         self.wsgi_app = wsgi_app
 
@@ -21,18 +22,18 @@ class DirectCORSMiddleware:
             start_response('200 OK', headers)
             return [b'']
 
-        def cors_start_response(status, headers, exc_info=None):
+        def custom_start_response(status, headers, exc_info=None):
             headers = list(headers)
             headers.append(('Access-Control-Allow-Origin', '*'))
             headers.append(('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'))
             headers.append(('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With'))
             return start_response(status, headers, exc_info)
 
-        return self.wsgi_app(environ, cors_start_response)
+        return self.wsgi_app(environ, custom_start_response)
 
-app.wsgi_app = DirectCORSMiddleware(app.wsgi_app)
+app.wsgi_app = CORSMiddleware(app.wsgi_app)
 
-# Application Data
+# In-Memory Database
 TOTAL_SEATS = 50
 occupied_seats = 0
 current_token = 1
@@ -54,10 +55,10 @@ menu_items = [
 orders = {}
 
 @app.route('/')
-def root():
-    return jsonify({"message": "QuickBitezzz Active Backend"})
+def home():
+    return jsonify({"message": "QuickBitezzz Backend Active API"})
 
-# --- SEAT ROUTES ---
+# --- SEATS ROUTES ---
 @app.route('/seats', methods=['GET', 'POST', 'OPTIONS'])
 def handle_seats():
     global occupied_seats, TOTAL_SEATS
@@ -152,7 +153,7 @@ def get_status(order_id):
     order_info["seats_left"] = max(0, TOTAL_SEATS - occupied_seats)
     return jsonify(order_info)
 
-# --- ADMIN STATUS & DELETE ROUTES ---
+# --- ADMIN ROUTES (Handles string & integer IDs, both / and /admin/ namespaces) ---
 @app.route('/admin/orders', methods=['GET'])
 @app.route('/orders', methods=['GET'])
 def get_admin_orders():
