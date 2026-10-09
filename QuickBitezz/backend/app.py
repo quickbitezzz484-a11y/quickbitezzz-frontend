@@ -1,197 +1,484 @@
-import random
-from flask import Flask, jsonify, request
-from flask_cors import CORS
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickBitezzz Admin</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #2c3e50;
+            margin: 0;
+            padding: 20px;
+        }
+        .admin-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+        h1 {
+            color: #1a1a1a;
+            font-size: 28px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 12px;
+        }
+        h2 {
+            color: #e65100;
+            font-size: 22px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        .seat-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            background-color: #fff3e0;
+            padding: 18px;
+            border-radius: 8px;
+            border: 1px solid #ffe0b2;
+            margin-bottom: 25px;
+        }
+        .seat-info-badge {
+            font-size: 16px;
+            font-weight: bold;
+            color: #d84315;
+            background-color: #ffe0b2;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+        .seat-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .seat-input-group label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e65100;
+        }
+        .seat-controls input {
+            padding: 8px 10px;
+            width: 100px;
+            border: 1px solid #cccccc;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333333;
+            outline: none;
+        }
+        .seat-controls button {
+            padding: 8px 16px;
+            background-color: #ff6f00;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .token-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            background-color: #e8f5e9;
+            padding: 18px;
+            border-radius: 8px;
+            border: 1px solid #c8e6c9;
+            margin-bottom: 25px;
+        }
+        .token-info-badge {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1b5e20;
+            background-color: #c8e6c9;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+        .token-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .token-input-group label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2e7d32;
+        }
+        .token-controls input {
+            padding: 8px 10px;
+            width: 100px;
+            border: 1px solid #cccccc;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333333;
+            outline: none;
+        }
+        .btn-token-set {
+            padding: 8px 16px;
+            background-color: #2e7d32;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn-token-next {
+            padding: 8px 16px;
+            background-color: #1565c0;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .preparing-banner {
+            background-color: #e3f2fd;
+            border: 2px dashed #1565c0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .preparing-banner h3 {
+            margin: 0;
+            color: #0d47a1;
+            font-size: 18px;
+        }
+        .preparing-token {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1565c0;
+            background: #ffffff;
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid #90caf9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        th {
+            background-color: #1a252f;
+            color: #ffffff;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 13px;
+        }
+        tbody tr:hover { background-color: #f9f9f9; }
+        .token-badge {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1565c0;
+            background-color: #e3f2fd;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+            border: 1px solid #bbdefb;
+        }
+        .btn-status {
+            padding: 7px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .btn-preparing { background-color: #ff9800; }
+        .btn-ready { background-color: #2e7d32; }
+        .btn-delete {
+            background-color: #d32f2f;
+            color: #ffffff;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .status-tag {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #ffffff;
+            display: inline-block;
+        }
+        .status-preparing { background-color: #ff9800; }
+        .status-done { background-color: #2e7d32; }
+        .paid-tag { 
+            background-color: #e8f5e9; 
+            color: #1b5e20; 
+            padding: 4px 10px; 
+            border-radius: 12px; 
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #a5d6a7;
+        }
+        .no-orders {
+            text-align: center;
+            color: #7f8c8d;
+            font-weight: bold;
+            padding: 25px;
+        }
+    </style>
+</head>
+<body>
 
-app = Flask(__name__)
+    <div class="admin-container">
+        <h1>👨‍🍳 Kitchen Dashboard</h1>
 
-# Enable CORS globally for all routes and methods
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+        <div class="seat-controls">
+            <div id="seatDisplay" class="seat-info-badge">🪑 Seats: Loading...</div>
+            <div class="seat-input-group">
+                <label>Available:</label>
+                <input type="number" id="availSeatInput" placeholder="Avail">
+                <label>Total:</label>
+                <input type="number" id="totalSeatInput" placeholder="Total">
+                <button onclick="updateSeats()">Update Seats</button>
+            </div>
+        </div>
 
-@app.after_request
-def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-    return response
+        <div class="token-controls">
+            <div id="tokenDisplay" class="token-info-badge">🎫 Now Serving Token: Loading...</div>
+            <div class="token-input-group">
+                <label>Set Token:</label>
+                <input type="number" id="currentTokenInput" placeholder="Token #">
+                <button class="btn-token-set" onclick="updateToken()">Set Token</button>
+                <button class="btn-token-next" onclick="incrementToken()">Next Token (+1)</button>
+            </div>
+        </div>
 
-@app.before_request
-def handle_options():
-    if request.method == 'OPTIONS':
-        return jsonify({"status": "ok"}), 200
+        <div class="preparing-banner">
+            <h3>🔥 Order Currently Being Prepared:</h3>
+            <div id="nowPreparingToken" class="preparing-token">None</div>
+        </div>
 
-# Global In-Memory State
-TOTAL_SEATS = 50
-occupied_seats = 0
-current_token = 1
-token_counter = 100
+        <h2>Incoming Orders</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Token</th>
+                    <th>Student Details</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Payment Method</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="ordersTable">
+                <tr><td colspan="9" class="no-orders">Loading orders...</td></tr>
+            </tbody>
+        </table>
+    </div>
 
-menu_items = [
-    {"id": 1, "name": "Burger", "price": 80},
-    {"id": 2, "name": "Pizza", "price": 150},
-    {"id": 3, "name": "Fries", "price": 60},
-    {"id": 4, "name": "Egg Noodles", "price": 90},
-    {"id": 5, "name": "Water Bottle", "price": 20},
-    {"id": 6, "name": "Ice Cream", "price": 40},
-    {"id": 7, "name": "Lays", "price": 20},
-    {"id": 8, "name": "Dairy Milk", "price": 50},
-    {"id": 9, "name": "Thumbs Up", "price": 30},
-    {"id": 10, "name": "Biscuits", "price": 25}
-]
+    <script>
+        const API_BASE = "https://quickbitezzz-backend4.onrender.com";
 
-orders = {}
+        async function safeFetchJson(url, options = {}) {
+            try {
+                const res = await fetch(url, options);
+                if (!res.ok) return null;
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    return await res.json();
+                }
+                return null;
+            } catch (err) {
+                return null;
+            }
+        }
 
-@app.route('/')
-def home():
-    return jsonify({"message": "QuickBitezzz Backend Active API"})
+        async function fetchSeats() {
+            const data = await safeFetchJson(`${API_BASE}/seats`);
+            if (data) {
+                document.getElementById("seatDisplay").innerText = `🪑 Available Seats: ${data.available_seats} / ${data.total_seats}`;
+                if (!document.getElementById("availSeatInput").value) {
+                    document.getElementById("availSeatInput").value = data.available_seats;
+                }
+                if (!document.getElementById("totalSeatInput").value) {
+                    document.getElementById("totalSeatInput").value = data.total_seats;
+                }
+            }
+        }
 
-# --- SEATS ENDPOINTS ---
-@app.route('/seats', methods=['GET', 'POST', 'OPTIONS'])
-def handle_seats():
-    global occupied_seats, TOTAL_SEATS
-    if request.method == 'POST':
-        data = request.json or {}
-        if 'available_seats' in data:
-            occupied_seats = max(0, TOTAL_SEATS - int(data['available_seats']))
-        if 'total_seats' in data:
-            TOTAL_SEATS = int(data['total_seats'])
-        return jsonify({
-            "success": True, 
-            "available_seats": max(0, TOTAL_SEATS - occupied_seats), 
-            "total_seats": TOTAL_SEATS
-        })
-    
-    available = max(0, TOTAL_SEATS - occupied_seats)
-    return jsonify({
-        "total_seats": TOTAL_SEATS,
-        "occupied_seats": occupied_seats,
-        "available_seats": available
-    })
-
-# --- TOKEN ENDPOINTS ---
-@app.route('/current-token', methods=['GET'])
-def get_current_token():
-    return jsonify({"current_token": current_token})
-
-@app.route('/admin/next-token', methods=['POST', 'OPTIONS'])
-@app.route('/next-token', methods=['POST', 'OPTIONS'])
-def next_token():
-    global current_token
-    current_token += 1
-    return jsonify({"message": "Token incremented", "current_token": current_token})
-
-@app.route('/admin/set-token', methods=['POST', 'OPTIONS'])
-@app.route('/set-token', methods=['POST', 'OPTIONS'])
-def set_token():
-    global current_token
-    data = request.json or {}
-    token_val = data.get("token") or data.get("current_token")
-    
-    if token_val is not None:
-        try:
-            current_token = int(token_val)
-            return jsonify({"message": "Token set", "current_token": current_token})
-        except ValueError:
-            return jsonify({"message": "Invalid token value"}), 400
+        async function updateSeats() {
+            const availSeats = document.getElementById("availSeatInput").value;
+            const totalSeats = document.getElementById("totalSeatInput").value;
             
-    return jsonify({"message": "Token value required"}), 400
+            const res = await safeFetchJson(`${API_BASE}/seats`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    available_seats: parseInt(availSeats),
+                    total_seats: parseInt(totalSeats)
+                })
+            });
+            if (res) {
+                alert("Seats updated successfully!");
+                fetchSeats();
+            }
+        }
 
-# --- MENU ENDPOINT ---
-@app.route('/menu', methods=['GET'])
-def get_menu():
-    return jsonify(menu_items)
+        async function fetchToken() {
+            const data = await safeFetchJson(`${API_BASE}/current-token`);
+            if (data) {
+                const currentToken = data.current_token;
+                document.getElementById("tokenDisplay").innerText = `🎫 Now Serving Token: #${currentToken}`;
+                if (!document.getElementById("currentTokenInput").value) {
+                    document.getElementById("currentTokenInput").value = currentToken;
+                }
+            }
+        }
 
-# --- ORDER ENDPOINTS ---
-@app.route('/order', methods=['POST', 'OPTIONS'])
-def place_order():
-    global occupied_seats, token_counter
-    data = request.json or {}
+        async function updateToken() {
+            const tokenVal = parseInt(document.getElementById("currentTokenInput").value);
+            if (isNaN(tokenVal)) return alert("Please enter a valid token number");
 
-    order_id = f"ORD{random.randint(1000, 9999)}"
-    token_counter += 1
-    assigned_token = token_counter
+            const res = await safeFetchJson(`${API_BASE}/admin/set-token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: tokenVal })
+            });
 
-    if occupied_seats < TOTAL_SEATS:
-        occupied_seats += 1
+            if (res) {
+                alert("Token updated successfully!");
+                fetchToken();
+            }
+        }
 
-    order_items = data.get("items") or data.get("item") or []
+        async function incrementToken() {
+            await safeFetchJson(`${API_BASE}/admin/next-token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            fetchToken();
+        }
 
-    new_order = {
-        "order_id": order_id,
-        "token_number": assigned_token,
-        "items": order_items,
-        "total_amount": data.get("total", 0),
-        "payment_status": data.get("payment_status", "Paid"),
-        "payment_method": data.get("payment_method", "UPI"),
-        "roll_no": data.get("roll_no", ""),
-        "student_name": data.get("student_name", ""),
-        "status": "Preparing Your Order",
-        "seats_left": max(0, TOTAL_SEATS - occupied_seats)
-    }
+        async function fetchOrders() {
+            const orders = await safeFetchJson(`${API_BASE}/admin/orders`);
+            const tableBody = document.getElementById("ordersTable");
 
-    orders[order_id] = new_order
-    return jsonify({"message": "Order placed successfully", "order": new_order}), 201
+            if (!orders || !Array.isArray(orders) || orders.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="9" class="no-orders">No active orders</td></tr>`;
+                document.getElementById("nowPreparingToken").innerText = "None";
+                return;
+            }
 
-@app.route('/status/<order_id>', methods=['GET'])
-def get_status(order_id):
-    order_info = None
-    for k, v in orders.items():
-        if str(k) == str(order_id):
-            order_info = v
-            break
-            
-    if not order_info:
-        return jsonify({"message": "Order not found"}), 404
-    
-    order_info["seats_left"] = max(0, TOTAL_SEATS - occupied_seats)
-    return jsonify(order_info)
+            tableBody.innerHTML = "";
+            let currentlyPreparing = null;
 
-# --- ADMIN ENDPOINTS ---
-@app.route('/admin/orders', methods=['GET'])
-@app.route('/orders', methods=['GET'])
-def get_admin_orders():
-    return jsonify(list(orders.values()))
+            orders.forEach(order => {
+                let statusStr = order.status || "Preparing Your Order";
+                if (statusStr === "Preparing Your Order") {
+                    currentlyPreparing = order;
+                }
 
-@app.route('/admin/update-status/<order_id>', methods=['POST', 'PUT', 'OPTIONS'])
-@app.route('/update-status/<order_id>', methods=['POST', 'PUT', 'OPTIONS'])
-def update_status(order_id):
-    global occupied_seats
-    if request.method == 'OPTIONS':
-        return jsonify({"status": "ok"}), 200
+                const row = document.createElement("tr");
 
-    data = request.json or {}
-    new_status = data.get("status")
+                let rawItems = order.items || order.item;
+                let itemsSummary = "N/A";
+                if (Array.isArray(rawItems)) {
+                    itemsSummary = rawItems.map(i => `${i.name} x ${i.quantity}`).join(", ");
+                } else if (typeof rawItems === 'string') {
+                    itemsSummary = rawItems;
+                }
 
-    matched_key = None
-    for k in orders.keys():
-        if str(k) == str(order_id):
-            matched_key = k
-            break
+                let studentInfo = `${order.student_name || 'N/A'}<br><small style="color:#666;">(${order.roll_no || 'N/A'})</small>`;
+                let statusClass = statusStr.toLowerCase().includes("ready") ? "status-done" : "status-preparing";
 
-    if matched_key:
-        orders[matched_key]["status"] = new_status
-        if new_status and "ready" in new_status.lower() and occupied_seats > 0:
-            occupied_seats -= 1
-        return jsonify({"message": "Status updated", "order": orders[matched_key]})
-    
-    return jsonify({"message": "Order not found"}), 404
+                const safeOrderId = String(order.order_id).replace(/'/g, "\\'");
 
-@app.route('/admin/delete-order/<order_id>', methods=['DELETE', 'POST', 'OPTIONS'])
-@app.route('/delete-order/<order_id>', methods=['DELETE', 'POST', 'OPTIONS'])
-def delete_order(order_id):
-    global orders
-    if request.method == 'OPTIONS':
-        return jsonify({"status": "ok"}), 200
+                row.innerHTML = `
+                    <td><strong>#${order.order_id ?? 'N/A'}</strong></td>
+                    <td><span class="token-badge">Token #${order.token_number ?? 'N/A'}</span></td>
+                    <td>${studentInfo}</td>
+                    <td>${itemsSummary}</td>
+                    <td><strong>₹${order.total_amount ?? 0}</strong></td>
+                    <td>${order.payment_method || 'UPI'}</td>
+                    <td><span class="paid-tag">${order.payment_status || 'Paid'}</span></td>
+                    <td><span class="status-tag ${statusClass}">${statusStr}</span></td>
+                    <td>
+                        <button class="btn-status btn-preparing" onclick="updateOrderStatus('${safeOrderId}', 'Preparing Your Order')">Preparing</button>
+                        <button class="btn-status btn-ready" onclick="updateOrderStatus('${safeOrderId}', 'Your Order is Ready')">Ready</button>
+                        <button class="btn-delete" onclick="deleteOrder('${safeOrderId}')">❌</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
 
-    matched_key = None
-    for k in orders.keys():
-        if str(k) == str(order_id):
-            matched_key = k
-            break
+            if (currentlyPreparing) {
+                document.getElementById("nowPreparingToken").innerText = `Order #${currentlyPreparing.order_id} (Token #${currentlyPreparing.token_number})`;
+            } else {
+                document.getElementById("nowPreparingToken").innerText = "None";
+            }
+        }
 
-    if matched_key:
-        del orders[matched_key]
-        return jsonify({"message": "Order deleted"})
-    return jsonify({"message": "Order not found"}), 404
+        async function updateOrderStatus(orderId, newStatus) {
+            const res = await safeFetchJson(`${API_BASE}/admin/update-status/${encodeURIComponent(orderId)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+            if (res) {
+                fetchOrders();
+            }
+        }
+
+        async function deleteOrder(orderId) {
+            if (!confirm(`Are you sure you want to clear Order #${orderId}?`)) return;
+
+            const res = await safeFetchJson(`${API_BASE}/admin/delete-order/${encodeURIComponent(orderId)}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" }
+            });
+
+            if (res) {
+                fetchOrders();
+                fetchSeats();
+            } else {
+                alert("Failed to delete order.");
+            }
+        }
+
+        fetchSeats();
+        fetchToken();
+        fetchOrders();
+
+        setInterval(fetchSeats, 3000);
+        setInterval(fetchToken, 3000);
+        setInterval(fetchOrders, 3000);
+    </script>
+</body>
+</html>
